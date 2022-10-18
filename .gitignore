@@ -1,0 +1,9 @@
+idea
+[B|b]uild
+.idea
+Build
+.build
+bin
+obj
+client_secrets.json
+.env

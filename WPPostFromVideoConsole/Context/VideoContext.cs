@@ -6,21 +6,21 @@ namespace WPPostFromVideoConsole.Context;
 public class VideoContext: DbContext
 {
     public DbSet<Video> Videos { get; set; }
-    public string DbPath { get; }
+    private string DbPath { get; }
     
     public VideoContext()
     {
         // var folder = Environment.SpecialFolder.LocalApplicationData;
         // var path = Environment.GetFolderPath(folder);
-        string workingDirectory = Environment.CurrentDirectory;
-        string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+        var workingDirectory = Environment.CurrentDirectory;
+        var projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
 
-        DbPath = System.IO.Path.Join(projectDirectory, "video.db");
+        DbPath = Path.Join(projectDirectory, "video.db");
     }
 
     public VideoContext(string dbPath)
     {
-        DbPath = System.IO.Path.Join(dbPath, "video.db");
+        DbPath = Path.Join(dbPath, "video.db");
     }
     
     // The following configures EF to create a Sqlite database file in the

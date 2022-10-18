@@ -6,7 +6,7 @@ namespace WPPostFromVideoConsole.Workers;
 
 public class DbWorker : IDb
 {
-    public static DbWorker Instance = new DbWorker();
+    public static DbWorker Instance = new ();
     
     public Video? GetVideoFromDb(VideoContext context)
     {
@@ -19,6 +19,8 @@ public class DbWorker : IDb
     
     public int AddVideoToDb(Video? video, VideoContext context)
     {
+        if (video == null) return -1;
+        
         video.IsPublished = true;
                 
         Console.WriteLine("Inserting a new video in DB");

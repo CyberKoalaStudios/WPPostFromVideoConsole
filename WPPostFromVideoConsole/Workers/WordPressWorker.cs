@@ -1,7 +1,6 @@
 using System.Net;
 using WordPressPCL;
 using WordPressPCL.Models;
-using WPPostFromVideoConsole.Context;
 using WPPostFromVideoConsole.Interfaces;
 using WPPostFromVideoConsole.Models;
 
@@ -9,27 +8,25 @@ namespace WPPostFromVideoConsole.Workers;
 
 public class WordPressWorker: IWordPress
 {
-    public static WordPressWorker Instance = new WordPressWorker();
+    public static WordPressWorker Instance = new ();
     
-    readonly WordPressClient _wordPressClient = new WordPressClient(System.Environment.GetEnvironmentVariable("WP_REST_URI"));
+    private readonly WordPressClient _wordPressClient = new (Environment.GetEnvironmentVariable("WP_REST_URI"));
 
+    [Obsolete("Obsolete")]
     public async Task<MediaItem?> UploadThumbToWp(string url, string file, string id)
     {
         // Download Thumb
-        string thumbFile = "preview.jpg";
+        const string thumbFile = "preview.jpg";
 
-        using WebClient client = new WebClient();
+        using var client = new WebClient();
         client.DownloadFile(new Uri(url), file);
-        // OR 
-        //client.DownloadFileAsync(new System.Uri(video.Thumbnail), thumbFile);
-        
+
         _wordPressClient.Auth.UseBasicAuth( DotNetEnv.Env.GetString("WP_USERNAME"), 
             DotNetEnv.Env.GetString("WP_APP_PASSWORD"));
 
         Console.WriteLine("Uploading Thumbnail into WordPress");
         var createdMedia = await _wordPressClient.Media.CreateAsync(thumbFile,$"thumb_{id}.jpg");
-
-        //throw NotImplementedException;
+        
         return createdMedia;
     }
 
@@ -55,5 +52,6 @@ public class WordPressWorker: IWordPress
         var createdPost = await _wordPressClient.Posts.CreateAsync(post);
         return createdPost;
     }
+    
     
 }

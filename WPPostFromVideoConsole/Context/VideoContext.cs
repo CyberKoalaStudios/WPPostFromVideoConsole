@@ -17,6 +17,11 @@ public class VideoContext: DbContext
 
         DbPath = System.IO.Path.Join(projectDirectory, "video.db");
     }
+
+    public VideoContext(string dbPath)
+    {
+        DbPath = System.IO.Path.Join(dbPath, "video.db");
+    }
     
     // The following configures EF to create a Sqlite database file in the
     // special "local" folder for your platform.

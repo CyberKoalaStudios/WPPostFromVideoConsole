@@ -52,6 +52,7 @@ internal class MyUploads
     private async Task Run()
     {
         UserCredential credential;
+        
         await using var db = new VideoContext();
         db.Database.Migrate();
         
@@ -108,6 +109,9 @@ internal class MyUploads
 
                 var latestItem = playlistItemsListResponse.Items.First();
                 
+                var videoFromDb = DbWorker.Instance.GetVideoFromDb(db);
+                
+                if (videoFromDb?.Id == latestItem.Snippet.ResourceId.VideoId) continue;
                 
                 var video = new Video()
                 {
@@ -118,10 +122,6 @@ internal class MyUploads
                     Thumbnail = latestItem.Snippet.Thumbnails.Maxres.Url,
                     IsPublished = false
                 };
-
-                var videoFromDb = DbWorker.Instance.GetVideoFromDb(db);
-                
-                if (videoFromDb?.Id == video.Id) continue;
                 
                 var createdMedia =  await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
                 

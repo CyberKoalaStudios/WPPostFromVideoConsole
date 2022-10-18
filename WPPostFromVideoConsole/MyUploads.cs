@@ -7,8 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using WordPressPCL;
 using WordPressPCL.Models;
 using WPPostFromVideoConsole.Context;
-using WPPostFromVideoConsole.Helpers;
+using WPPostFromVideoConsole.Interfaces;
 using WPPostFromVideoConsole.Models;
+using WPPostFromVideoConsole.Workers;
 
 namespace WPPostFromVideoConsole;
 
@@ -118,36 +119,16 @@ internal class MyUploads
                     IsPublished = false
                 };
 
-                var videoFromDb = VideoWorker.Instance.GetVideoFromDb(db);
+                var videoFromDb = DbWorker.Instance.GetVideoFromDb(db);
                 
                 if (videoFromDb?.Id == video.Id) continue;
                 
-                // Download Thumb
-                var createdMedia =  await VideoWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
+                var createdMedia =  await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
+                
+                var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia);
 
-                Console.WriteLine("Publishing into WordPress");
-                // returns created post
-                var post = new Post()
-                {
-                    Title = new Title(video.Title),
-                    Content = new Content($"\n{video.Description}"),
-                    //Author = 1,
-                    Status = Status.Future,
-                    Date = DateTime.Now.AddDays(1), // video.publishedAt.AddMinutes(10)
-                    Categories = new List<int>(){81},
-                    //Format = "standart",
-                    CommentStatus = OpenStatus.Open,
-                    FeaturedMedia = createdMedia.Id
-                };
-                
-                var createdPost = await _wordPressClient.Posts.CreateAsync(post);
-            
-                video.IsPublished = true;
-                
-                Console.WriteLine("Inserting a new video in DB");
-                db.Add(video);
-                db.SaveChanges();
-            
+                var addedToDb =  DbWorker.Instance.AddVideoToDb(video, db);
+
                 nextPageToken = playlistItemsListResponse.NextPageToken;
             // }
         }

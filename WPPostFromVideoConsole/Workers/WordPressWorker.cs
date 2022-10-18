@@ -1,26 +1,17 @@
 using System.Net;
-using System.Reflection.Metadata;
 using WordPressPCL;
 using WordPressPCL.Models;
 using WPPostFromVideoConsole.Context;
+using WPPostFromVideoConsole.Interfaces;
 using WPPostFromVideoConsole.Models;
 
-namespace WPPostFromVideoConsole.Helpers;
+namespace WPPostFromVideoConsole.Workers;
 
-public class VideoWorker: IVideo
+public class WordPressWorker: IWordPress
 {
-    public static VideoWorker Instance = new VideoWorker();
+    public static WordPressWorker Instance = new WordPressWorker();
     
     readonly WordPressClient _wordPressClient = new WordPressClient(System.Environment.GetEnvironmentVariable("WP_REST_URI"));
-
-    public Video? GetVideoFromDb(VideoContext context)
-    {
-        var videoFromDb = context.Videos
-            .OrderBy(b => b.PublishedAt)
-            .FirstOrDefault();
-
-        return videoFromDb;
-    }
 
     public async Task<MediaItem?> UploadThumbToWp(string url, string file, string id)
     {
@@ -44,11 +35,13 @@ public class VideoWorker: IVideo
 
     public async Task<Post?> CreateNewPost(Video? video, MediaItem? createdMedia)
     {
-        // returns created post
+        var iframe =
+            $"<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/{video?.Id}\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>";
+        
         var post = new Post()
         {
             Title = new Title(video?.Title),
-            Content = new Content($"\n{video?.Description}"),
+            Content = new Content($"{iframe}\n{video?.Description}"),
             //Author = 1,
             Status = Status.Future,
             Date = DateTime.Now.AddDays(1), // video.publishedAt.AddMinutes(10)
@@ -58,16 +51,9 @@ public class VideoWorker: IVideo
             FeaturedMedia = createdMedia?.Id
         };
                 
+        Console.WriteLine("Creating Post WordPress");
         var createdPost = await _wordPressClient.Posts.CreateAsync(post);
         return createdPost;
     }
-
-    public void AddVideoToDb(Video? video, VideoContext context)
-    {
-        video.IsPublished = true;
-                
-        Console.WriteLine("Inserting a new video in DB");
-        context.Add(video);
-        context.SaveChanges();
-    }
+    
 }

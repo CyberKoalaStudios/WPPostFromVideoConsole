@@ -41,7 +41,10 @@ internal class MyUploads
 
         try
         {
-            new MyUploads().Run(args[0]).Wait();
+            foreach (var arg in args)
+            {
+                new MyUploads().Run(arg).Wait();
+            }
         }
         catch (AggregateException ex)
         {

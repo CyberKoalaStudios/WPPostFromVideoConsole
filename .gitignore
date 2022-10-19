@@ -7,3 +7,4 @@ bin
 obj
 client_secrets.json
 .env
+WPPostFromVideoConsole/video.db

@@ -112,9 +112,10 @@ internal class MyUploads
 
                 var latestItem = playlistItemsListResponse.Items.First();
                 
-                var videoFromDb = DbWorker.Instance.GetVideoFromDb(db);
+                var videoFromDb = DbWorker.Instance.GetVideoFromDbById(db, latestItem.Snippet.ResourceId.VideoId);
                 
                 if (videoFromDb?.Id == latestItem.Snippet.ResourceId.VideoId) continue;
+                // if (videoFromDb.IsPublished) continue;
                 
                 var video = new Video()
                 {

@@ -10,12 +10,12 @@ public class VideoContext: DbContext
     
     public VideoContext()
     {
-        // var folder = Environment.SpecialFolder.LocalApplicationData;
-        // var path = Environment.GetFolderPath(folder);
-        var workingDirectory = Environment.CurrentDirectory;
-        var projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+        var folder = Environment.SpecialFolder.LocalApplicationData;
+        var path = Environment.GetFolderPath(folder);
+        //var workingDirectory = Environment.CurrentDirectory;
+        //var projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
 
-        DbPath = Path.Join(projectDirectory, "video.db");
+        DbPath = Path.Join(path, "video.db");
     }
 
     public VideoContext(string dbPath)

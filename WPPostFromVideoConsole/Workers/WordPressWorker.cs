@@ -6,11 +6,11 @@ using WPPostFromVideoConsole.Models;
 
 namespace WPPostFromVideoConsole.Workers;
 
-public class WordPressWorker: IWordPress
+public class WordPressWorker : IWordPress
 {
-    public static WordPressWorker Instance = new ();
-    
-    private readonly WordPressClient _wordPressClient = new (Environment.GetEnvironmentVariable("WP_REST_URI"));
+    public static WordPressWorker Instance = new();
+
+    private readonly WordPressClient _wordPressClient = new(Environment.GetEnvironmentVariable("WP_REST_URI"));
 
     [Obsolete("Obsolete")]
     public async Task<MediaItem?> UploadThumbToWp(string url, string file, string id)
@@ -21,12 +21,12 @@ public class WordPressWorker: IWordPress
         using var client = new WebClient();
         client.DownloadFile(new Uri(url), file);
 
-        _wordPressClient.Auth.UseBasicAuth( DotNetEnv.Env.GetString("WP_USERNAME"), 
+        _wordPressClient.Auth.UseBasicAuth(DotNetEnv.Env.GetString("WP_USERNAME"),
             DotNetEnv.Env.GetString("WP_APP_PASSWORD"));
 
         Console.WriteLine("Uploading Thumbnail into WordPress");
-        var createdMedia = await _wordPressClient.Media.CreateAsync(thumbFile,$"thumb_{id}.jpg");
-        
+        var createdMedia = await _wordPressClient.Media.CreateAsync(thumbFile, $"thumb_{id}.jpg");
+
         return createdMedia;
     }
 
@@ -40,21 +40,22 @@ public class WordPressWorker: IWordPress
         {
             delayToAdd = DotNetEnv.Env.GetInt("POST_DELAY");
         }
+
         var post = new Post()
         {
             Title = new Title(video?.Title),
             Content = new Content($"{iframe}\n{video?.Description}"),
             Status = Status.Future,
             Date = DateTime.Now.AddDays(delayToAdd),
-            Categories = new List<int>(){DotNetEnv.Env.GetInt("POST_CATEGORY")},
+            Categories = new List<int>() { DotNetEnv.Env.GetInt("POST_CATEGORY") },
             CommentStatus = OpenStatus.Open,
             FeaturedMedia = createdMedia?.Id
         };
-                
+
         Console.WriteLine("Creating Post...");
         var createdPost = await _wordPressClient.Posts.CreateAsync(post);
         return createdPost;
     }
-    
-    
+
+
 }

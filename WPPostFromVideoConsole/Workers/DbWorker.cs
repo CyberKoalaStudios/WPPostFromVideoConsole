@@ -16,6 +16,16 @@ public class DbWorker : IDb
 
         return videoFromDb;
     }
+
+    public Video? GetVideoFromDbById(VideoContext context, string id)
+    {
+        var videoFromDb = context.Videos
+            .Where(a=> a.Id.Equals(id))
+            .OrderBy(b => b.PublishedAt)
+            .FirstOrDefault();
+
+        return videoFromDb;
+    }
     
     public int AddVideoToDb(Video? video, VideoContext context)
     {

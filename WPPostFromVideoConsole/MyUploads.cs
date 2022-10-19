@@ -41,7 +41,7 @@ internal class MyUploads
 
         try
         {
-            new MyUploads().Run().Wait();
+            new MyUploads().Run(args[0]).Wait();
         }
         catch (AggregateException ex)
         {
@@ -52,14 +52,14 @@ internal class MyUploads
         }
     }
 
-    private async Task Run()
+    private async Task Run(string clientSecretsFile)
     {
         UserCredential credential;
         
         await using var db = new VideoContext();
         db.Database.Migrate();
         
-        await using(var stream = new System.IO.FileStream("client_secrets.json", FileMode.Open, FileAccess.Read))
+        await using(var stream = new System.IO.FileStream(clientSecretsFile, FileMode.Open, FileAccess.Read))
         {
             credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
                 GoogleClientSecrets.Load(stream).Secrets,

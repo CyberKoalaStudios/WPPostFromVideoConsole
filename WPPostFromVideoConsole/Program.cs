@@ -1,4 +1,7 @@
 ﻿using WPPostFromVideoConsole;
 
 DotNetEnv.Env.TraversePath().Load();
-MyUploads.GetUploads(args);
+
+var secrets = new string[2] {"client_secrets.json", ""};
+
+MyUploads.GetUploads(secrets);

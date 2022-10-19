@@ -30,25 +30,28 @@ public class WordPressWorker: IWordPress
         return createdMedia;
     }
 
-    public async Task<Post?> CreateNewPost(Video? video, MediaItem? createdMedia)
+    public async Task<Post?> CreateNewPost(Video? video, MediaItem? createdMedia, PostPublishType postPublishType)
     {
         var iframe =
             $"<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/{video?.Id}\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>";
-        
+
+        int delayToAdd = 0;
+        if (postPublishType == PostPublishType.Scheduled)
+        {
+            delayToAdd = DotNetEnv.Env.GetInt("POST_DELAY");
+        }
         var post = new Post()
         {
             Title = new Title(video?.Title),
             Content = new Content($"{iframe}\n{video?.Description}"),
-            //Author = 1,
             Status = Status.Future,
-            Date = DateTime.Now.AddDays(1), // video.publishedAt.AddMinutes(10)
-            Categories = new List<int>(){81},
-            //Format = "standart",
+            Date = DateTime.Now.AddDays(delayToAdd),
+            Categories = new List<int>(){DotNetEnv.Env.GetInt("POST_CATEGORY")},
             CommentStatus = OpenStatus.Open,
             FeaturedMedia = createdMedia?.Id
         };
                 
-        Console.WriteLine("Creating Post WordPress");
+        Console.WriteLine("Creating Post...");
         var createdPost = await _wordPressClient.Posts.CreateAsync(post);
         return createdPost;
     }

@@ -13,6 +13,7 @@ using WPPostFromVideoConsole.Workers;
 
 namespace WPPostFromVideoConsole;
 
+
 public enum PostPublishType
 {
     Scheduled,
@@ -28,7 +29,9 @@ internal class MyUploads
 {
     //pass the Wordpress REST API base address as string
     WordPressClient _wordPressClient = new WordPressClient(System.Environment.GetEnvironmentVariable("WP_REST_URI"));
-    
+
+    private PostPublishType _postPublishType = PostPublishType.Scheduled;
+        
     [STAThread]
     public static void GetUploads(string[] args)
     {
@@ -125,7 +128,7 @@ internal class MyUploads
                 
                 var createdMedia =  await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
                 
-                var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia);
+                var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia, _postPublishType);
 
                 var addedToDb =  DbWorker.Instance.AddVideoToDb(video, db);
 

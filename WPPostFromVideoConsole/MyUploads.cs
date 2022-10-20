@@ -17,7 +17,8 @@ namespace WPPostFromVideoConsole;
 public enum PostPublishType
 {
     Scheduled,
-    Now
+    Now,
+    AtDate
 }
 
 /// <summary>
@@ -30,8 +31,15 @@ internal class MyUploads
     //pass the Wordpress REST API base address as string
     WordPressClient _wordPressClient = new WordPressClient(System.Environment.GetEnvironmentVariable("WP_REST_URI"));
 
-    private PostPublishType _postPublishType = PostPublishType.Scheduled;
-        
+    private PostPublishType _postPublishType;
+    private Dictionary<int, PostPublishType> _postTypeDict = new()  
+    {
+        { 0, PostPublishType.Scheduled  },
+        { 1, PostPublishType.Now },
+        { 2, PostPublishType.AtDate }
+    };
+
+    
     [STAThread]
     public static void GetUploads(string[] args)
     {
@@ -132,6 +140,11 @@ internal class MyUploads
                 
                 var createdMedia =  await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
                 
+                if (_postTypeDict.TryGetValue(DotNetEnv.Env.GetInt("MODE"), out _postPublishType))   // TryGetValue, on popular request
+                {
+                    Console.WriteLine("For key = \"MODE\", value = {0}.", _postPublishType);
+                }
+
                 var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia, _postPublishType);
 
                 var addedToDb =  DbWorker.Instance.AddVideoToDb(video, db);

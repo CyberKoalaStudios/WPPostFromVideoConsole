@@ -46,7 +46,7 @@ public class WordPressWorker : IWordPress
             Title = new Title(video?.Title),
             Content = new Content($"{iframe}\n{video?.Description}"),
             Status = Status.Future,
-            Date = DateTime.Now.AddDays(delayToAdd),
+            Date = DateTime.Today.AddDays(delayToAdd).AddHours(DotNetEnv.Env.GetInt("PUBLISH_HOUR")),
             Categories = new List<int>() { DotNetEnv.Env.GetInt("POST_CATEGORY") },
             CommentStatus = OpenStatus.Open,
             FeaturedMedia = createdMedia?.Id

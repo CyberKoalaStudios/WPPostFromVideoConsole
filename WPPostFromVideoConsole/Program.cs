@@ -1,7 +1,8 @@
-﻿using WPPostFromVideoConsole;
+﻿using DotNetEnv;
+using WPPostFromVideoConsole;
 
-DotNetEnv.Env.TraversePath().Load();
+Env.TraversePath().Load();
 
-var secrets = new string[1] {DotNetEnv.Env.GetString("CLIENT_SECRETS_FILE")};
 
+var secrets = new string[1] { Env.GetString("CLIENT_SECRETS_FILE") };
 MyUploads.GetUploads(secrets);

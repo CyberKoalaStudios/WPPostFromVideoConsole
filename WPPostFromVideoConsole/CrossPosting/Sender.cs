@@ -1,5 +1,6 @@
 using Discord.Webhook;
 using DotNetEnv;
+using Telegram.Bot;
 using WordPressPCL.Models;
 using WPPostFromVideoConsole.Models;
 using Video = WPPostFromVideoConsole.Models.Video;
@@ -23,18 +24,20 @@ internal abstract class Sender
 
 internal class TelegramSender : Sender
 {
-    public TelegramSender(string n) : base(n)
+    private TelegramBotClient botClient;
+    public TelegramSender(string token) : base(token)
     {
+        botClient = new TelegramBotClient(token);
     }
 
     public override MessengerPost CreateFromYouTube(Video video)
     {
-        return new Telegram();
+        return new Telegram(botClient, video);
     }
     
     public override MessengerPost CreateFromWordPress(Post post)
     {
-        return new Telegram();
+        return new Telegram(botClient, post);
     }
 }
 

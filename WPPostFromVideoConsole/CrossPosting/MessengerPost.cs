@@ -1,9 +1,13 @@
-using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Webhook;
+using Telegram.Bot;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 using WordPressPCL.Models;
-using WPPostFromVideoConsole.Models;
+using WPPostFromVideoConsole.Helpers;
 using WPPostFromVideoConsole.Workers;
+using Video = WPPostFromVideoConsole.Models.Video;
 
 namespace WPPostFromVideoConsole.CrossPosting;
 
@@ -13,9 +17,69 @@ internal abstract class MessengerPost { }
 
 internal class Telegram : MessengerPost
 {
-    public Telegram()
+    private TelegramBotClient _botClient;
+    private Video? _video;
+    private Post _post;
+    private long _chatId = (long)DotNetEnv.Env.GetInt("TELEGRAM_CHAT_ID");
+    private string _authorNameRu = DotNetEnv.Env.GetString("AUTHOR_NAME_RU");
+    
+    public Telegram(TelegramBotClient botClient, Post post)
     {
+        _botClient = botClient;
+        _post = post;
+        
+        var task = PublishNow().Result;
+
+        //var task2 = Postpone().Result;
+
         Console.WriteLine("Telegram post sended");
+    }
+    
+
+    public Telegram(TelegramBotClient botClient, Video video)
+    {
+        _botClient = botClient;
+        _video = video;
+        
+        throw new NotImplementedException();
+        Console.WriteLine("Telegram post sended");
+    }
+    
+    private async Task<Message> PublishNow()
+    {
+        var caption = $"<b>{Formatter.StripHtml(_post.Title.Rendered)}</b>\n" +
+                      $"{Formatter.StripHtml(_post.Content.Rendered)}\n" +
+                      $"<i>Источник: </i><a href=\"{Formatter.StripHtml(_post.Link)}\">{_authorNameRu}</a>";
+        
+        // caption = Formatter.StripHtml(caption);
+
+        // // Old
+        // Message message = await _botClient.SendPhotoAsync(
+        //     chatId: new ChatId(_chatId),
+        //     photo: WordPressWorker.Instance.GetMediaUrlById(_post?.FeaturedMedia ?? 6762).Result,
+        //     caption: caption,
+        //     replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithUrl(
+        //         "Посмотреть",
+        //         _post.Link)),
+        //     parseMode: ParseMode.Html
+        // );
+
+        caption = _post.Title.Rendered;
+        caption = Formatter.StripHtml(caption);
+            
+        // Instant View
+        Message message = await _botClient.SendTextMessageAsync(
+            chatId: new ChatId(_chatId),
+            text: caption + "\n" +
+                  $"https://t.me/iv?url={_post.Link}/&rhash=2c0efe862dc92c"
+
+        );
+        
+        return message;
+    }   
+    private async Task<Message> Postpone()
+    {
+        throw new NotImplementedException();
     }
 }
 
@@ -40,7 +104,9 @@ internal class Discord : MessengerPost
         _postParams.imageUrl = _video.Thumbnail;
         _postParams.timestamp = _video.PublishedAt ?? DateTime.Now;
 
-        SendPost();
+        var thread = new Thread(SendPost);
+        thread.Start();
+        
         Console.WriteLine("Discord post from YT sended");
     }
     
@@ -50,12 +116,14 @@ internal class Discord : MessengerPost
         _post = post;
         
         _postParams.postName = _post.Title.Rendered;
-        _postParams.description = _post.Content.Rendered;
+        _postParams.description = Formatter.StripHtml(_post.Content.Rendered);
         _postParams.url = _post.Link;
         _postParams.imageUrl = WordPressWorker.Instance.GetMediaUrlById(_post.FeaturedMedia).Result;
         _postParams.timestamp = _post.Date;
         
-        SendPost();
+        var thread = new Thread(SendPost);
+        thread.Start();
+        
         Console.WriteLine("Discord post from WP sended");
     }
 
@@ -79,7 +147,7 @@ internal class Discord : MessengerPost
         
         var embed = new EmbedBuilder
         {
-            Title = $"Семинарус - {_postParams.postName}",
+            Title = _postParams.postName, //$"Семинарус - {_postParams.postName}",
             Author = author,
             Description = _postParams.description, // Maybe need trimming
             Color = Color.Orange,

@@ -18,6 +18,12 @@ public enum PostPublishType
     AtDate
 }
 
+public enum VideoStatus
+{
+    Public,
+    Private
+}
+
 /// <summary>
 ///     YouTube Data API v3 sample: retrieve my uploads.
 ///     Relies on the Google APIs Client Library for .NET, v1.7.0 or higher.
@@ -28,6 +34,7 @@ internal class MyUploads
     private readonly int _mode = Env.GetInt("MODE");
 
     private PostPublishType _postPublishType;
+    private VideoStatus _videoStatus;
 
     private readonly Dictionary<int, PostPublishType> _postTypeDict = new()
     {
@@ -35,10 +42,22 @@ internal class MyUploads
         { 1, PostPublishType.Now },
         { 2, PostPublishType.AtDate }
     };
+    
+    private readonly Dictionary<string, VideoStatus> _videoStatusMap = new()
+    {
+        { "public", VideoStatus.Public },
+        { "private", VideoStatus.Private},
+    };
+    
+    private readonly Dictionary<VideoStatus, PostPublishType> _videoStatusToPostMap = new()
+    {
+        { VideoStatus.Public, PostPublishType.Now },
+        { VideoStatus.Private, PostPublishType.Scheduled},
+    };
 
     private PostWorker _postWorker = new(); // Subscribe to delegate on init
     public static event Action<Post> PostPublishedInDb = delegate { };
-    public static event Action<Video> VideoPublished = delegate { };
+    public static event Action<WPPostFromVideoConsole.Models.Video> VideoPublished = delegate { };
 
     [STAThread]
     public static void GetUploads(string[] args)
@@ -83,7 +102,7 @@ internal class MyUploads
             ApplicationName = GetType().ToString()
         });
 
-        var channelsListRequest = youtubeService.Channels.List("contentDetails");
+        var channelsListRequest = youtubeService.Channels.List("contentDetails, status");
         channelsListRequest.Mine = true;
 
         // Retrieve the contentDetails part of the channel resource for the authenticated user's channel.
@@ -100,9 +119,9 @@ internal class MyUploads
             var nextPageToken = "";
             // while (nextPageToken != null)
             // {
-            var playlistItemsListRequest = youtubeService.PlaylistItems.List("snippet");
+            var playlistItemsListRequest = youtubeService.PlaylistItems.List("snippet, status");
             playlistItemsListRequest.PlaylistId = uploadsListId;
-            playlistItemsListRequest.MaxResults = 1;
+            playlistItemsListRequest.MaxResults = 2;
             playlistItemsListRequest.PageToken = nextPageToken;
 
             // Retrieve the list of videos uploaded to the authenticated user's channel.
@@ -114,31 +133,41 @@ internal class MyUploads
                 Console.WriteLine("{0} ({1})", playlistItem.Snippet.Title, playlistItem.Snippet.ResourceId.VideoId);
                 Console.WriteLine($"Published: {playlistItem.Snippet.PublishedAt}");
             }
+            
+            var latestItem = playlistItemsListResponse.Items.First();
+            var status = latestItem.Status.PrivacyStatus;
+            _videoStatusMap.TryGetValue(status, out _videoStatus);
 
-  
+            _videoStatusToPostMap.TryGetValue(_videoStatus, out _postPublishType);
+
+
 #if DEBUG
-            // BEGIN TEST
+            
             var mockVideo = new Video
             {
-                Id = "abcdef",
-                Description = "latestItem.Snippet.Description",
-                PublishedAt = DateTime.Now,
-                Title = "latestItem.Snippet.Title",
-                Thumbnail = "latestItem.Snippet.Thumbnails.Maxres.Url",
+                Id = latestItem.Snippet.ResourceId.VideoId,
+                Description = latestItem.Snippet.Description,
+                PublishedAt = latestItem.Snippet.PublishedAt,
+                Title = latestItem.Snippet.Title,
+                Thumbnail = latestItem.Snippet.Thumbnails.Maxres.Url,
                 IsPublished = false
             };
-            var testPost = await WordPressWorker.Instance.GetPosts();
-            PostPublishedInDb?.Invoke(testPost.First());
-            VideoPublished?.Invoke(mockVideo);
+            var testPost = await WordPressWorker.Instance.GetPostById(9094);
+     
+            //PostPublishedInDb?.Invoke(testPost);
+            //var createdMediaTest = await WordPressWorker.Instance.UploadThumbToWp(mockVideo.Thumbnail, "preview.jpg", mockVideo.Id);
+
+            //VideoPublished?.Invoke(mockVideo);
+
+            PostPublishedInDb?.Invoke(testPost ?? throw new InvalidOperationException());
+
             // END TEST
 #endif
-
-            var latestItem = playlistItemsListResponse.Items.First();
-
+            
             var videoFromDb = DbWorker.Instance.GetVideoFromDbById(db, latestItem.Snippet.ResourceId.VideoId);
-
+            
             if (videoFromDb?.Id == latestItem.Snippet.ResourceId.VideoId) continue;
-
+            
             var video = new Video
             {
                 Id = latestItem.Snippet.ResourceId.VideoId,
@@ -150,15 +179,13 @@ internal class MyUploads
             };
 
             var createdMedia = await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
-
-            if (_postTypeDict.TryGetValue(_mode, out _postPublishType))
-                Console.WriteLine("For key = \"MODE\", value = {0}.", _postPublishType);
-
             var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia, _postPublishType);
-            
             var addedToDb = DbWorker.Instance.AddVideoToDb(video, db);
 
-            if (addedToDb != -1) PostPublishedInDb?.Invoke(createdPost);
+            if (addedToDb != -1)
+            {
+                PostPublishedInDb?.Invoke(createdPost ?? throw new InvalidOperationException());
+            }
 
             nextPageToken = playlistItemsListResponse.NextPageToken;
             // }

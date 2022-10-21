@@ -8,7 +8,7 @@ namespace WPPostFromVideoConsole.Workers;
 public class PostWorker
 {
     private readonly DiscordSender _discordSender = new(Env.GetString("DISCORD_TOKEN"));
-    private readonly TelegramSender _telegramSender = new("Telegram Token");
+    private readonly TelegramSender _telegramSender = new(Env.GetString("TELEGRAM_BOT_TOKEN"));
 
     public PostWorker()
     {
@@ -18,8 +18,22 @@ public class PostWorker
 
     private void OnPostPublished(Post post)
     {
-        var discordPost = _discordSender.CreateFromWordPress(post);
-        var telegramPost = _telegramSender.CreateFromWordPress(post);
+        switch (post.Status)
+        {
+            case Status.Publish:
+            {
+                var discordPost = _discordSender.CreateFromWordPress(post);
+                var telegramPost = _telegramSender.CreateFromWordPress(post);
+                break;
+            }
+            case Status.Future:
+            //case Status.Private:
+            {
+                // TODO: Add scheduler to discord/telegram posts, publish onto {post.Date}
+                
+                break;
+            }
+        }
     }
 
     private void OnVideoPublished(Video video)

@@ -2,6 +2,7 @@ using System.Net;
 using DotNetEnv;
 using WordPressPCL;
 using WordPressPCL.Models;
+using WPPostFromVideoConsole.Helpers;
 using WPPostFromVideoConsole.Interfaces;
 using WPPostFromVideoConsole.Models;
 
@@ -17,15 +18,12 @@ public class WordPressWorker : IWordPress
     private readonly string _username = Env.GetString("WP_USERNAME");
 
     private readonly WordPressClient _wordPressClient = new(Environment.GetEnvironmentVariable("WP_REST_URI"));
-
-    [Obsolete("Obsolete")]
+    
     public async Task<MediaItem?> UploadThumbToWp(string url, string file, string id)
     {
-        // Download Thumb
         const string thumbFile = "preview.jpg";
-
-        using var client = new WebClient();
-        client.DownloadFile(new Uri(url), file);
+        
+        HttpHelper.DownloadFileAsync(url, file);
 
         _wordPressClient.Auth.UseBasicAuth(_username,
             _appPassword);
@@ -65,9 +63,15 @@ public class WordPressWorker : IWordPress
         return await _wordPressClient.Posts.GetAllAsync();
     }
 
+    public async Task<Post> GetPostById(int postId)
+    {
+        return await _wordPressClient.Posts.GetByIDAsync(postId);
+    }
+
     public async Task<string> GetMediaUrlById(int? mediaId)
     {
         var media = await _wordPressClient.Media.GetByIDAsync(mediaId);
         return media.Link;
     }
+    
 }

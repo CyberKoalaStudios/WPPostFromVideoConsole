@@ -6,23 +6,12 @@ using Google.Apis.YouTube.v3;
 using Microsoft.EntityFrameworkCore;
 using WordPressPCL.Models;
 using WPPostFromVideoConsole.Context;
+using WPPostFromVideoConsole.MediaTypes;
 using WPPostFromVideoConsole.Models;
 using WPPostFromVideoConsole.Workers;
 
 namespace WPPostFromVideoConsole;
 
-public enum PostPublishType
-{
-    Scheduled,
-    Now,
-    AtDate
-}
-
-public enum VideoStatus
-{
-    Public,
-    Private
-}
 
 /// <summary>
 ///     YouTube Data API v3 sample: retrieve my uploads.
@@ -36,24 +25,6 @@ internal class MyUploads
     private PostPublishType _postPublishType;
     private VideoStatus _videoStatus;
 
-    private readonly Dictionary<int, PostPublishType> _postTypeDict = new()
-    {
-        { 0, PostPublishType.Scheduled },
-        { 1, PostPublishType.Now },
-        { 2, PostPublishType.AtDate }
-    };
-    
-    private readonly Dictionary<string, VideoStatus> _videoStatusMap = new()
-    {
-        { "public", VideoStatus.Public },
-        { "private", VideoStatus.Private},
-    };
-    
-    private readonly Dictionary<VideoStatus, PostPublishType> _videoStatusToPostMap = new()
-    {
-        { VideoStatus.Public, PostPublishType.Now },
-        { VideoStatus.Private, PostPublishType.Scheduled},
-    };
 
     private PostWorker _postWorker = new(); // Subscribe to delegate on init
     public static event Action<Post> PostPublishedInDb = delegate { };
@@ -136,9 +107,9 @@ internal class MyUploads
             
             var latestItem = playlistItemsListResponse.Items.First();
             var status = latestItem.Status.PrivacyStatus;
-            _videoStatusMap.TryGetValue(status, out _videoStatus);
+            Mappings.VideoToSite.videoStatusMap.TryGetValue(status, out _videoStatus);
 
-            _videoStatusToPostMap.TryGetValue(_videoStatus, out _postPublishType);
+            Mappings.VideoToSite.videoStatusToPostMap.TryGetValue(_videoStatus, out _postPublishType);
 
 
 #if DEBUG

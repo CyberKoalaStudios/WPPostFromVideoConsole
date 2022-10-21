@@ -1,4 +1,5 @@
 using WordPressPCL.Models;
+using WPPostFromVideoConsole.MediaTypes;
 using WPPostFromVideoConsole.Models;
 
 namespace WPPostFromVideoConsole.Interfaces;

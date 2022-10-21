@@ -4,6 +4,7 @@ using WordPressPCL;
 using WordPressPCL.Models;
 using WPPostFromVideoConsole.Helpers;
 using WPPostFromVideoConsole.Interfaces;
+using WPPostFromVideoConsole.MediaTypes;
 using WPPostFromVideoConsole.Models;
 
 namespace WPPostFromVideoConsole.Workers;

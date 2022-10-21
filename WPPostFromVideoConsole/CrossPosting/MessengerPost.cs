@@ -6,6 +6,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using WordPressPCL.Models;
 using WPPostFromVideoConsole.Helpers;
+using WPPostFromVideoConsole.Models;
 using WPPostFromVideoConsole.Workers;
 using Video = WPPostFromVideoConsole.Models.Video;
 
@@ -88,11 +89,11 @@ internal class Discord : MessengerPost
     private Video? _video;
     private Post? _post;
     private DiscordWebhookClient _webhookClient;
-    private PostParams _postParams;
     private string _logoUrl = DotNetEnv.Env.GetString("LOGO_URL");
     private string _authorName = DotNetEnv.Env.GetString("AUTHOR_NAME");
     private string _authorNameRu = DotNetEnv.Env.GetString("AUTHOR_NAME_RU");
     private string _ads = DotNetEnv.Env.GetString("ADS");
+    private PostParams _postParams = new();
     public Discord(DiscordWebhookClient webhookClient, Video video)
     {
         _webhookClient = webhookClient;
@@ -103,7 +104,9 @@ internal class Discord : MessengerPost
         _postParams.url = $"https://www.youtube.com/watch?v={_video.Id}";
         _postParams.imageUrl = _video.Thumbnail;
         _postParams.timestamp = _video.PublishedAt ?? DateTime.Now;
+        // _postParams.status =  PostWorker._videoStatus;
 
+        throw new NotImplementedException();
         var thread = new Thread(SendPost);
         thread.Start();
         
@@ -120,7 +123,7 @@ internal class Discord : MessengerPost
         _postParams.url = _post.Link;
         _postParams.imageUrl = WordPressWorker.Instance.GetMediaUrlById(_post.FeaturedMedia).Result;
         _postParams.timestamp = _post.Date;
-        
+
         var thread = new Thread(SendPost);
         thread.Start();
         
@@ -163,24 +166,6 @@ internal class Discord : MessengerPost
         await _webhookClient.SendMessageAsync($"@everyone {_postParams.postName} - {_postParams.url}", embeds: new[] { embed.Build() });
     }
     
-
-    struct PostParams
-    {
-        public string postName;
-        public string description;
-        public string url;
-        public string imageUrl;
-        public DateTimeOffset timestamp;
-        
-        public PostParams()
-        {
-            postName = "Post Name";
-            description = "Description";
-            url = "https://cyberkoalastudios.com/category/seminaruses/";
-            imageUrl = "https://cyberkoalastudios.com/wp-content/uploads/2022/10/thumb_bjy3Yua4aSM.jpg";
-            timestamp = DateTimeOffset.Now;
-        }
-    }
 }
 
 #endregion

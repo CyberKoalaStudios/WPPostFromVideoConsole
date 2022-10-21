@@ -1,13 +1,21 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+
 namespace WPPostFromVideoConsole.Models;
 
 public class PostParams
 {
+    [Key]
+    public int PostId { get; set; }
     public string postName { get; set; }
     public string description { get; set; }
     public string url { get; set; }
     public string imageUrl { get; set; }
     public DateTimeOffset timestamp { get; set; }
     public byte status { get; set; }
+    
+    public int VideoIdx { get; set; }
+    public Video Video { get; set; }
         
     public PostParams()
     {

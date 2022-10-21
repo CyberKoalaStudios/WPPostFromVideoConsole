@@ -27,7 +27,7 @@ public class DbWorker : IDb
         return videoFromDb;
     }
 
-    public int AddVideoToDb(Video? video, VideoContext context)
+    public int AddVideoToDb( VideoContext context, Video? video)
     {
         if (video == null) return -1;
 
@@ -37,5 +37,18 @@ public class DbWorker : IDb
         context.Add(video);
         var stateEntitiesWritten = context.SaveChanges();
         return stateEntitiesWritten;
+    }
+
+    public void PutPostInDb(VideoContext ctx, PostParams post)
+    {
+        ctx.Add(post);
+        ctx.SaveChanges();
+    }
+    
+    public void PutPostWithVideoInDb(VideoContext ctx, PostParams post, Video video)
+    {
+        post.Video = video;
+        ctx.Posts.Add(post);
+        var num = ctx.SaveChanges();
     }
 }

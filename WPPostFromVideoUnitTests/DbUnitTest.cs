@@ -31,7 +31,7 @@ public class Tests
     public void InsertNonUniqueDbTest()
     {
         _video = DbWorker.Instance.GetVideoFromDb(_context);
-        var addedToDb = DbWorker.Instance.AddVideoToDb(_video, _context);
+        var addedToDb = DbWorker.Instance.AddVideoToDb(_context, _video);
         Assert.GreaterOrEqual(addedToDb, 0);
     }
 }

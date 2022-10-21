@@ -18,6 +18,7 @@ public class VideoContext : DbContext
     }
 
     public DbSet<Video> Videos { get; set; }
+    public DbSet<PostParams> Posts { get; set; }
     private string DbPath { get; }
 
     // The following configures EF to create a Sqlite database file in the

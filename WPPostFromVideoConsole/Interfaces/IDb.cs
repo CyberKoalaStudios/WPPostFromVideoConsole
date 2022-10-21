@@ -7,5 +7,6 @@ public interface IDb
 {
     public Video? GetVideoFromDb(VideoContext context);
     public Video? GetVideoFromDbById(VideoContext context, string id);
-    public int AddVideoToDb(Video? video, VideoContext context);
+    public int AddVideoToDb(VideoContext context, Video? video);
+    public void PutPostInDb(VideoContext ctx, PostParams post);
 }

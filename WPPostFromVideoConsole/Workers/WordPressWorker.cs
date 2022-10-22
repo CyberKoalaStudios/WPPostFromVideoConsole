@@ -1,4 +1,3 @@
-using System.Net;
 using DotNetEnv;
 using WordPressPCL;
 using WordPressPCL.Models;
@@ -12,7 +11,7 @@ namespace WPPostFromVideoConsole.Workers;
 
 public class WordPressWorker : IWordPress
 {
-    public static WordPressWorker Instance = new();
+    public static readonly WordPressWorker Instance = new();
     private readonly string _appPassword = Env.GetString("WP_APP_PASSWORD");
     private readonly int _postCategory = Env.GetInt("POST_CATEGORY");
     private readonly int _postDelay = Env.GetInt("POST_DELAY");
@@ -20,11 +19,11 @@ public class WordPressWorker : IWordPress
     private readonly string _username = Env.GetString("WP_USERNAME");
 
     private readonly WordPressClient _wordPressClient = new(Environment.GetEnvironmentVariable("WP_REST_URI"));
-    
+
     public async Task<MediaItem?> UploadThumbToWp(string url, string file, string id)
     {
         const string thumbFile = "preview.jpg";
-        
+
         HttpHelper.DownloadFileAsync(url, file);
 
         _wordPressClient.Auth.UseBasicAuth(_username,
@@ -39,14 +38,15 @@ public class WordPressWorker : IWordPress
     public async Task<Post?> CreateNewPost(Video? video, MediaItem? createdMedia, PostPublishType postPublishType)
     {
         var iframe =
-            $"<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/{video?.Id}\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>";
+            $"<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/{video?.Id}\" " +
+            "title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; " +
+            // ReSharper disable once StringLiteralTypo
+            "encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>";
 
-        DateTime publishDate = DateTime.Now;
-       
+        var publishDate = DateTime.Now;
+
         if (postPublishType == PostPublishType.Scheduled)
-        {
             publishDate = DateTime.Today.AddDays(_postDelay).AddHours(_publishHour);
-        }
 
         var post = new Post
         {
@@ -79,5 +79,4 @@ public class WordPressWorker : IWordPress
         var media = await _wordPressClient.Media.GetByIDAsync(mediaId);
         return media.Link;
     }
-    
 }

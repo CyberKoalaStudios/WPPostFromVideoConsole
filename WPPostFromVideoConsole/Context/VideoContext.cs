@@ -1,13 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using WPPostFromVideoConsole.Models;
 
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+
 namespace WPPostFromVideoConsole.Context;
 
 public class VideoContext : DbContext
 {
+#pragma warning disable CS8618
     public VideoContext()
     {
-        var folder = Environment.SpecialFolder.LocalApplicationData;
+        const Environment.SpecialFolder folder = Environment.SpecialFolder.LocalApplicationData;
         var path = Environment.GetFolderPath(folder);
         DbPath = Path.Join(path, "video.db");
     }
@@ -27,4 +30,5 @@ public class VideoContext : DbContext
     {
         options.UseSqlite($"Data Source={DbPath}");
     }
+#pragma warning enable CS8618
 }

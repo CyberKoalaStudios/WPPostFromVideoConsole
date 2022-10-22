@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace WPPostFromVideoConsole.Helpers;
 
-public class Formatter
+public static class Formatter
 {
     public static string StripHtml(string input)
     {

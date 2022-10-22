@@ -1,58 +1,58 @@
 using Discord;
 using Discord.Webhook;
+using DotNetEnv;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
-using WordPressPCL.Models;
 using WPPostFromVideoConsole.Helpers;
-using WPPostFromVideoConsole.Models;
 using WPPostFromVideoConsole.Workers;
-using Post = WPPostFromVideoConsole.Models.Post;
+using Post = WordPressPCL.Models.Post;
 using Video = WPPostFromVideoConsole.Models.Video;
 
 namespace WPPostFromVideoConsole.CrossPosting;
 
-internal abstract class MessengerPost { }
+internal abstract class MessengerPost
+{
+}
 
 #region Messengers
 
 internal class Telegram : MessengerPost
 {
-    private TelegramBotClient _botClient;
+    private readonly string _authorNameRu = Env.GetString("AUTHOR_NAME_RU");
+    private readonly TelegramBotClient _botClient;
+    private readonly long _chatId = Env.GetInt("TELEGRAM_CHAT_ID");
+    private readonly Post _post;
     private Video? _video;
-    private WordPressPCL.Models.Post _post;
-    private long _chatId = (long)DotNetEnv.Env.GetInt("TELEGRAM_CHAT_ID");
-    private string _authorNameRu = DotNetEnv.Env.GetString("AUTHOR_NAME_RU");
-    
-    public Telegram(TelegramBotClient botClient, WordPressPCL.Models.Post post)
+
+    public Telegram(TelegramBotClient botClient, Post post)
     {
         _botClient = botClient;
         _post = post;
-        
-        var task = PublishNow().Result;
 
-        //var task2 = Postpone().Result;
+        // var task = new Task(PublishNow);
+        // task.Start();
+        // task.GetAwaiter().GetResult();
+        PublishNow().GetAwaiter().GetResult();
 
-        Console.WriteLine("Telegram post sended");
+        Console.WriteLine("Telegram post sent");
     }
-    
+
 
     public Telegram(TelegramBotClient botClient, Video video)
     {
         _botClient = botClient;
         _video = video;
-        
+
         throw new NotImplementedException();
-        Console.WriteLine("Telegram post sended");
     }
-    
-    private async Task<Message> PublishNow()
+
+    private async Task PublishNow()
     {
+        // ReSharper disable once StringLiteralTypo
         var caption = $"<b>{Formatter.StripHtml(_post.Title.Rendered)}</b>\n" +
                       $"{Formatter.StripHtml(_post.Content.Rendered)}\n" +
                       $"<i>Источник: </i><a href=\"{Formatter.StripHtml(_post.Link)}\">{_authorNameRu}</a>";
-        
+
         // caption = Formatter.StripHtml(caption);
 
         // // Old
@@ -68,77 +68,73 @@ internal class Telegram : MessengerPost
 
         caption = _post.Title.Rendered;
         caption = Formatter.StripHtml(caption);
-            
-        // Instant View
-        Message message = await _botClient.SendTextMessageAsync(
-            chatId: new ChatId(_chatId),
-            text: caption + "\n" +
-                  $"https://t.me/iv?url={_post.Link}/&rhash=2c0efe862dc92c"
 
+        // Instant View
+        await _botClient.SendTextMessageAsync(
+            new ChatId(_chatId),
+            caption + "\n" +
+            $"https://t.me/iv?url={_post.Link}/&rhash=2c0efe862dc92c"
         );
-        
-        return message;
-    }   
-    private async Task<Message> Postpone()
-    {
-        throw new NotImplementedException();
     }
 }
 
 internal class Discord : MessengerPost
 {
-    private Post _post = new();
+    private readonly string _ads = Env.GetString("ADS");
+    private readonly string _authorName = Env.GetString("AUTHOR_NAME");
+    private readonly string _authorNameRu = Env.GetString("AUTHOR_NAME_RU");
+    private readonly string _logoUrl = Env.GetString("LOGO_URL");
+    private readonly Models.Post _post = new();
 
-    private DiscordWebhookClient _webhookClient;
-    private string _logoUrl = DotNetEnv.Env.GetString("LOGO_URL");
-    private string _authorName = DotNetEnv.Env.GetString("AUTHOR_NAME");
-    private string _authorNameRu = DotNetEnv.Env.GetString("AUTHOR_NAME_RU");
-    private string _ads = DotNetEnv.Env.GetString("ADS");
+    private readonly DiscordWebhookClient _webhookClient;
+
     public Discord(DiscordWebhookClient webhookClient, Video video)
     {
         _webhookClient = webhookClient;
-        _post = new();
-        
-        _post.PostName = video.Title;
-        _post.Description = video.Description;
-        _post.Url = $"https://www.youtube.com/watch?v={video.Id}";
-        _post.ImageUrl = video.Thumbnail;
-        _post.Timestamp = video.PublishedAt ?? DateTime.Now;
+        _post = new Models.Post
+        {
+            PostName = video.Title,
+            Description = video.Description,
+            Url = $"https://www.youtube.com/watch?v={video.Id}",
+            ImageUrl = video.Thumbnail,
+            Timestamp = video.PublishedAt ?? DateTime.Now
+        };
+
         // _postParams.status =  PostWorker._videoStatus;
 
         throw new NotImplementedException();
-        var thread = new Thread(SendPost);
-        thread.Start();
-        
-        Console.WriteLine("Discord post from YT sended");
     }
-    
-    public Discord(DiscordWebhookClient webhookClient, WordPressPCL.Models.Post postFromWordPress)
+
+    public Discord(DiscordWebhookClient webhookClient, Post postFromWordPress)
     {
         _webhookClient = webhookClient;
-        _post = new();
-        
-        _post.PostName = postFromWordPress.Title.Rendered;
-        _post.Description = Formatter.StripHtml(postFromWordPress.Content.Rendered);
-        _post.Url = postFromWordPress.Link;
-        _post.ImageUrl = WordPressWorker.Instance.GetMediaUrlById(postFromWordPress.FeaturedMedia).Result;
-        _post.Timestamp = postFromWordPress.Date;
+        _post = new Models.Post
+        {
+            PostName = postFromWordPress.Title.Rendered,
+            Description = Formatter.StripHtml(postFromWordPress.Content.Rendered),
+            Url = postFromWordPress.Link,
+            ImageUrl = WordPressWorker.Instance.GetMediaUrlById(postFromWordPress.FeaturedMedia).Result,
+            Timestamp = postFromWordPress.Date
+        };
 
-        var thread = new Thread(SendPost);
-        thread.Start();
-        
-        Console.WriteLine("Discord post from WP sended");
+        var task = new Task(SendPost);
+        task.Start();
+        task.GetAwaiter().GetResult();
+
+        Console.WriteLine("Discord post from WP sent");
     }
 
     private async void SendPost()
     {
-        var fields = new List<EmbedFieldBuilder>();
-        fields.Add(new EmbedFieldBuilder
+        var fields = new List<EmbedFieldBuilder>
         {
-            Name = "Полезное",
-            Value = _ads,
-            IsInline = true
-        });
+            new()
+            {
+                Name = "Полезное",
+                Value = _ads,
+                IsInline = true
+            }
+        };
 
         var author = new EmbedAuthorBuilder()
             .WithName(_authorNameRu)
@@ -147,7 +143,7 @@ internal class Discord : MessengerPost
         var footer = new EmbedFooterBuilder()
             .WithText(_authorName)
             .WithIconUrl(_logoUrl);
-        
+
         var embed = new EmbedBuilder
         {
             Title = _post.PostName, //$"Семинарус - {_postParams.postName}",
@@ -163,9 +159,9 @@ internal class Discord : MessengerPost
 
         // Webhooks are able to send multiple embeds per message
         // As such, your embeds must be passed as a collection.
-        await _webhookClient.SendMessageAsync($"@everyone {_post.PostName} - {_post.Url}", embeds: new[] { embed.Build() });
+        await _webhookClient.SendMessageAsync($"@everyone {_post.PostName} - {_post.Url}",
+            embeds: new[] { embed.Build() });
     }
-    
 }
 
 #endregion

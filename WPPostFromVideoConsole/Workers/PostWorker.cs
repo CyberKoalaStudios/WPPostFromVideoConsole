@@ -3,28 +3,26 @@ using WordPressPCL.Models;
 using WPPostFromVideoConsole.Context;
 using WPPostFromVideoConsole.CrossPosting;
 using WPPostFromVideoConsole.Helpers;
+using WPPostFromVideoConsole.Mappings;
 using WPPostFromVideoConsole.Models;
-using Post = WPPostFromVideoConsole.Models.Post;
+using Post = WordPressPCL.Models.Post;
 
 namespace WPPostFromVideoConsole.Workers;
 
 public class PostWorker
 {
-
     private readonly DiscordSender _discordSender = new(Env.GetString("DISCORD_TOKEN"));
     private readonly TelegramSender _telegramSender = new(Env.GetString("TELEGRAM_BOT_TOKEN"));
-
-
     private byte _postStatus;
-    
+
     public PostWorker()
     {
-        MyUploads.PostPublishedInDb += OnPostPublished;
-        MyUploads.VideoPublished += OnVideoPublished;
         MyUploads.PostAndVideoPublishedInDb += OnPostWithVideoPublished;
+
+        Publisher.PostStatusChanged += OnPostPublished;
     }
 
-    private void OnPostPublished(WordPressPCL.Models.Post post)
+    private void OnPostPublished(Post post)
     {
         switch (post.Status)
         {
@@ -32,48 +30,60 @@ public class PostWorker
             {
                 _discordSender.CreateFromWordPress(post);
                 _telegramSender.CreateFromWordPress(post);
-                
+
                 break;
             }
             case Status.Future:
             case Status.Private:
             case Status.Pending:
             {
-                // TODO: Add scheduler to discord/telegram posts, publish onto {post.Date}
                 PutPostInDb(post);
                 break;
             }
+            case Status.Draft:
+                break;
+            case Status.Trash:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(post.Status.ToString());
         }
-    }   
-    private void OnPostWithVideoPublished(WordPressPCL.Models.Post post, Video video)
+    }
+
+    private void OnPostWithVideoPublished(Post post, Video video)
     {
         switch (post.Status)
         {
             case Status.Publish:
             {
                 _discordSender.CreateFromWordPress(post);
-                 _telegramSender.CreateFromWordPress(post);
+                _telegramSender.CreateFromWordPress(post);
                 break;
             }
             case Status.Future:
-            //case Status.Private:
+            case Status.Pending:
+            case Status.Private:
             {
-                // TODO: Add scheduler to discord/telegram posts, publish onto {post.Date}
                 PutPostWithVideoInDb(post, video);
                 break;
             }
+            case Status.Draft:
+                break;
+            case Status.Trash:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(post.Status.ToString());
         }
     }
 
-    private void OnVideoPublished(Video video)
-    {
-        var discordPost = _discordSender.CreateFromYouTube(video);
-        var telegramPost = _telegramSender.CreateFromYouTube(video);
-    }
+    // private void OnVideoPublished(Video video)
+    // {
+    //     var discordPost = _discordSender.CreateFromYouTube(video);
+    //     var telegramPost = _telegramSender.CreateFromYouTube(video);
+    // }
 
-    private void PutPostInDb(WordPressPCL.Models.Post post)
+    private void PutPostInDb(Post post)
     {
-        var postParams = new Post
+        var postParams = new Models.Post
         {
             PostName = post.Title.Rendered,
             Description = Formatter.StripHtml(post.Content.Rendered),
@@ -83,31 +93,29 @@ public class PostWorker
             WordpressId = post.Id
         };
 
-        Mappings.PostToDb.postStatusMap.TryGetValue(post.Status, out _postStatus);
+        PostToDb.PostStatusMap.TryGetValue(post.Status, out _postStatus);
         postParams.Status = _postStatus;
-        
+
         using var db = new VideoContext();
         DbWorker.Instance.PutPostInDb(db, postParams);
-        // TODO: Create service that checks status of post -> if published -> Update In DB and publish to discord/Telegram
     }
-    
-    private void PutPostWithVideoInDb(WordPressPCL.Models.Post post, Video video)
+
+    private void PutPostWithVideoInDb(Post post, Video video)
     {
-        var postParams = new Post
+        var postParams = new Models.Post
         {
             PostName = post.Title.Rendered,
             Description = Formatter.StripHtml(post.Content.Rendered),
             Url = post.Link,
             ImageUrl = WordPressWorker.Instance.GetMediaUrlById(post.FeaturedMedia).Result,
             Timestamp = post.Date,
-            WordpressId = post.Id,
+            WordpressId = post.Id
         };
 
-        Mappings.PostToDb.postStatusMap.TryGetValue(post.Status, out _postStatus);
+        PostToDb.PostStatusMap.TryGetValue(post.Status, out _postStatus);
         postParams.Status = _postStatus;
-        
+
         using var db = new VideoContext();
-        DbWorker.Instance.PutPostWithVideoInDb(db, postParams, video);
+        DbWorker.PutPostWithVideoInDb(db, postParams, video);
     }
-    
 }

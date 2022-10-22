@@ -4,5 +4,9 @@ using WPPostFromVideoConsole;
 Env.TraversePath().Load();
 
 
-var secrets = new string[1] { Env.GetString("CLIENT_SECRETS_FILE") };
+var secrets = new[] { Env.GetString("CLIENT_SECRETS_FILE") };
+
+var publisher = new Publisher();
+await publisher.StatusChecker();
+
 MyUploads.GetUploads(secrets);

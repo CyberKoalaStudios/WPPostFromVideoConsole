@@ -6,7 +6,7 @@ namespace WPPostFromVideoConsole.Workers;
 
 public class DbWorker : IDb
 {
-    public static DbWorker Instance = new();
+    public static readonly DbWorker Instance = new();
 
     public Video? GetVideoFromDb(VideoContext context)
     {
@@ -19,11 +19,11 @@ public class DbWorker : IDb
 
     public List<Post> GetPostsFromDb(VideoContext context)
     {
-        var videoFromDb = context.Posts
-            .OrderBy(b => b.Timestamp).ToList();
+        var videoFromDb = context.Posts.ToList();
 
         return videoFromDb;
     }
+
     public Video? GetVideoFromDbById(VideoContext context, string id)
     {
         var videoFromDb = context.Videos
@@ -34,7 +34,7 @@ public class DbWorker : IDb
         return videoFromDb;
     }
 
-    public int AddVideoToDb( VideoContext context, Video? video)
+    public int AddVideoToDb(VideoContext context, Video? video)
     {
         if (video == null) return -1;
 
@@ -51,24 +51,40 @@ public class DbWorker : IDb
         ctx.Add(post);
         ctx.SaveChanges();
     }
-    
-    public void PutPostWithVideoInDb(VideoContext ctx, Post post, Video video)
-    {
-        post.Video = video;
-        post.VideoIdx = video.Idx;
-        ctx.Posts.Add(post);
-        var num = ctx.SaveChanges();
-    }
 
     public void EditVideoInDb(VideoContext context, Video video)
     {
         context.Videos.Update(video);
         context.SaveChanges();
-    }    
-    
+    }
+
     public void EditPostInDb(VideoContext context, Post post)
     {
         context.Posts.Update(post);
+        context.SaveChanges();
+    }
+
+    public static void PutPostWithVideoInDb(VideoContext ctx, Post post, Video video)
+    {
+        post.Video = video;
+        post.VideoIdx = video.Idx;
+
+        ctx.Posts.Add(post);
+        ctx.SaveChanges();
+
+        ClearOldEntities(ctx);
+    }
+
+    private static void ClearOldEntities(VideoContext context)
+    {
+        if (context.Videos.Count() <= 5) return;
+
+        var videos = context.Videos
+            .OrderBy(v => v.Idx)
+            .Take(5)
+            .ToList();
+
+        context.RemoveRange(videos);
         context.SaveChanges();
     }
 }

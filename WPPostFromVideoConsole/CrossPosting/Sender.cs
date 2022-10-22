@@ -1,23 +1,22 @@
 using Discord.Webhook;
 using DotNetEnv;
 using Telegram.Bot;
-using WordPressPCL.Models;
 using WPPostFromVideoConsole.Models;
 using Post = WordPressPCL.Models.Post;
-using Video = WPPostFromVideoConsole.Models.Video;
 
 namespace WPPostFromVideoConsole.CrossPosting;
 
 internal abstract class Sender
 {
-    public Sender(string token)
+    // ReSharper disable once UnusedParameter.Local
+    protected Sender(string token)
     {
-        Token = token;
     }
 
-    public string Token { get; set; }
-
+    // ReSharper disable once UnusedMemberInSuper.Global
     public abstract MessengerPost CreateFromYouTube(Video video);
+
+    // ReSharper disable once UnusedMemberInSuper.Global
     public abstract MessengerPost CreateFromWordPress(Post post);
 }
 
@@ -25,20 +24,21 @@ internal abstract class Sender
 
 internal class TelegramSender : Sender
 {
-    private TelegramBotClient botClient;
+    private readonly TelegramBotClient _botClient;
+
     public TelegramSender(string token) : base(token)
     {
-        botClient = new TelegramBotClient(token);
+        _botClient = new TelegramBotClient(token);
     }
 
     public override MessengerPost CreateFromYouTube(Video video)
     {
-        return new Telegram(botClient, video);
+        return new Telegram(_botClient, video);
     }
-    
+
     public override MessengerPost CreateFromWordPress(Post post)
     {
-        return new Telegram(botClient, post);
+        return new Telegram(_botClient, post);
     }
 }
 
@@ -52,7 +52,7 @@ internal class DiscordSender : Sender
         var webHookUrl = $"https://discord.com/api/webhooks/{_id}/{token}";
         _client = new DiscordWebhookClient(webHookUrl);
     }
-    
+
     public override MessengerPost CreateFromYouTube(Video video)
     {
         return new Discord(_client, video);
@@ -62,7 +62,6 @@ internal class DiscordSender : Sender
     {
         return new Discord(_client, post);
     }
-
 }
 
 #endregion

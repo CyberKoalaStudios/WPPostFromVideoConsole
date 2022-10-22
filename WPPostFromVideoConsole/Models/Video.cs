@@ -16,7 +16,10 @@ public class Video
 
     public string Thumbnail { get; set; }
 
+    [Comment("Wordpress Publication Status; Whether future or now = true. If videopost exist in WP")]
     public bool IsPublished { get; set; }
+    // public bool IsSentDiscord { get; set; }
+    // public bool IsSentTelegram { get; set; }
     
     public List<PostParams> PostParams { get; set; }
 }

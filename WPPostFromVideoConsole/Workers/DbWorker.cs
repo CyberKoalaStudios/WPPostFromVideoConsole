@@ -51,4 +51,10 @@ public class DbWorker : IDb
         ctx.Posts.Add(post);
         var num = ctx.SaveChanges();
     }
+
+    public void EditVideoInDb(VideoContext context, Video video)
+    {
+        context.Videos.Update(video);
+        context.SaveChanges();
+    }
 }

@@ -3,12 +3,14 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Google.Apis.YouTube.v3;
+using Google.Apis.YouTube.v3.Data;
 using Microsoft.EntityFrameworkCore;
 using WordPressPCL.Models;
 using WPPostFromVideoConsole.Context;
 using WPPostFromVideoConsole.MediaTypes;
-using WPPostFromVideoConsole.Models;
 using WPPostFromVideoConsole.Workers;
+using Video = WPPostFromVideoConsole.Models.Video;
+using VideoStatus = WPPostFromVideoConsole.MediaTypes.VideoStatus;
 
 namespace WPPostFromVideoConsole;
 
@@ -103,65 +105,71 @@ internal class MyUploads
                 // Print information about each video.
                 Console.WriteLine("{0} ({1})", playlistItem.Snippet.Title, playlistItem.Snippet.ResourceId.VideoId);
                 Console.WriteLine($"Published: {playlistItem.Snippet.PublishedAt}");
-
-                var status = playlistItem.Status.PrivacyStatus;
-                Mappings.VideoToSite.videoStatusMap.TryGetValue(status, out _videoStatus);
-
-                Mappings.VideoToSite.videoStatusToPostMap.TryGetValue(_videoStatus, out _postPublishType);
-#if DEBUG
-
-                var mockVideo = new Video
-                {
-                    Id = playlistItem.Snippet.ResourceId.VideoId,
-                    Description = playlistItem.Snippet.Description,
-                    PublishedAt = playlistItem.Snippet.PublishedAt,
-                    Title = playlistItem.Snippet.Title,
-                    Thumbnail = playlistItem.Snippet.Thumbnails.Maxres.Url,
-                    IsPublished = false
-                };
-                var testPost = await WordPressWorker.Instance.GetPostById(9094);
-                testPost.Status = Status.Future;
-               
-                //PostPublishedInDb?.Invoke(testPost);
-                //var createdMediaTest = await WordPressWorker.Instance.UploadThumbToWp(mockVideo.Thumbnail, "preview.jpg", mockVideo.Id);
-
-                //VideoPublished?.Invoke(mockVideo);
-
-                //PostPublishedInDb?.Invoke(testPost);
-                PostAndVideoPublishedInDb?.Invoke(testPost, mockVideo);
-                // END TEST
-#endif
-
-                var videoFromDb = DbWorker.Instance.GetVideoFromDbById(db, playlistItem.Snippet.ResourceId.VideoId);
-
-                if (videoFromDb?.Id == playlistItem.Snippet.ResourceId.VideoId) continue;
-
-                var video = new Video
-                {
-                    Id = playlistItem.Snippet.ResourceId.VideoId,
-                    Description = playlistItem.Snippet.Description,
-                    PublishedAt = playlistItem.Snippet.PublishedAt,
-                    Title = playlistItem.Snippet.Title,
-                    Thumbnail = playlistItem.Snippet.Thumbnails.Maxres.Url,
-                    IsPublished = false
-                };
-
-                var createdMedia =
-                    await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
-                var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia, _postPublishType);
-                var addedToDb = DbWorker.Instance.AddVideoToDb(db, video);
-
-                if (addedToDb != -1 && createdPost != null)
-                {
-                    //PostAndVideoPublishedInDb?.Invoke(createdPost, video);
-                    PostPublishedInDb?.Invoke(createdPost);
-                }
+                
+                await ProcessVideo(playlistItem, db);
             }
 
             //var latestItem = playlistItemsListResponse.Items.First();
 
             nextPageToken = playlistItemsListResponse.NextPageToken;
             // }
+        }
+    }
+
+    private async Task ProcessVideo(PlaylistItem playlistItem, VideoContext db)
+    {
+        var status = playlistItem.Status.PrivacyStatus;
+        Mappings.VideoToSite.videoStatusMap.TryGetValue(status, out _videoStatus);
+
+        Mappings.VideoToSite.videoStatusToPostMap.TryGetValue(_videoStatus, out _postPublishType);
+#if DEBUG
+
+        var mockVideo = new Video
+        {
+            Id = playlistItem.Snippet.ResourceId.VideoId,
+            Description = playlistItem.Snippet.Description,
+            PublishedAt = playlistItem.Snippet.PublishedAt,
+            Title = playlistItem.Snippet.Title,
+            Thumbnail = playlistItem.Snippet.Thumbnails.Maxres.Url,
+            IsPublished = false
+        };
+        var testPost = await WordPressWorker.Instance.GetPostById(9094);
+        testPost.Status = Status.Future;
+
+        //PostPublishedInDb?.Invoke(testPost);
+        //var createdMediaTest = await WordPressWorker.Instance.UploadThumbToWp(mockVideo.Thumbnail, "preview.jpg", mockVideo.Id);
+
+        //VideoPublished?.Invoke(mockVideo);
+
+        //PostPublishedInDb?.Invoke(testPost);
+        PostAndVideoPublishedInDb?.Invoke(testPost, mockVideo);
+        // END TEST
+#endif
+
+        var videoFromDb = DbWorker.Instance.GetVideoFromDbById(db, playlistItem.Snippet.ResourceId.VideoId);
+
+        if (videoFromDb?.Id == playlistItem.Snippet.ResourceId.VideoId)
+            return;
+        
+        var video = new Video
+        {
+            Id = playlistItem.Snippet.ResourceId.VideoId,
+            Description = playlistItem.Snippet.Description,
+            PublishedAt = playlistItem.Snippet.PublishedAt,
+            Title = playlistItem.Snippet.Title,
+            Thumbnail = playlistItem.Snippet.Thumbnails.Maxres.Url,
+            IsPublished = false
+        };
+
+        var createdMedia =
+            await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
+        var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia, _postPublishType);
+        var addedToDb = DbWorker.Instance.AddVideoToDb(db, video);
+
+        if (addedToDb != -1 && createdPost != null)
+        {
+            //PostAndVideoPublishedInDb?.Invoke(createdPost, video);
+            PostPublishedInDb?.Invoke(createdPost);
         }
     }
 }

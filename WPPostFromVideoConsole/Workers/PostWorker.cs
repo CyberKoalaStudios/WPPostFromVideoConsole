@@ -29,12 +29,14 @@ public class PostWorker
         {
             case Status.Publish:
             {
-                var discordPost = _discordSender.CreateFromWordPress(post);
-                var telegramPost = _telegramSender.CreateFromWordPress(post);
+                _discordSender.CreateFromWordPress(post);
+                _telegramSender.CreateFromWordPress(post);
+                
                 break;
             }
             case Status.Future:
-            //case Status.Private:
+            case Status.Private:
+            case Status.Pending:
             {
                 // TODO: Add scheduler to discord/telegram posts, publish onto {post.Date}
                 PutPostInDb(post);
@@ -70,29 +72,33 @@ public class PostWorker
 
     private void PutPostInDb(Post post)
     {
-        var postParams = new PostParams();
-        postParams.postName = post.Title.Rendered;
-        postParams.description = Formatter.StripHtml(post.Content.Rendered);
-        postParams.url = post.Link;
-        postParams.imageUrl = WordPressWorker.Instance.GetMediaUrlById(post.FeaturedMedia).Result;
-        postParams.timestamp = post.Date;
+        var postParams = new PostParams
+        {
+            postName = post.Title.Rendered,
+            description = Formatter.StripHtml(post.Content.Rendered),
+            url = post.Link,
+            imageUrl = WordPressWorker.Instance.GetMediaUrlById(post.FeaturedMedia).Result,
+            timestamp = post.Date
+        };
 
         Mappings.PostToDb.postStatusMap.TryGetValue(post.Status, out _postStatus);
         postParams.status = _postStatus;
         
         using var db = new VideoContext();
         DbWorker.Instance.PutPostInDb(db, postParams);
-        
-        
+        // TODO: Create service that checks status of post -> if published -> Update In DB and publish to discord/Telegram
     }
+    
     private void PutPostWithVideoInDb(Post post, Video video)
     {
-        var postParams = new PostParams();
-        postParams.postName = post.Title.Rendered;
-        postParams.description = Formatter.StripHtml(post.Content.Rendered);
-        postParams.url = post.Link;
-        postParams.imageUrl = WordPressWorker.Instance.GetMediaUrlById(post.FeaturedMedia).Result;
-        postParams.timestamp = post.Date;
+        var postParams = new PostParams
+        {
+            postName = post.Title.Rendered,
+            description = Formatter.StripHtml(post.Content.Rendered),
+            url = post.Link,
+            imageUrl = WordPressWorker.Instance.GetMediaUrlById(post.FeaturedMedia).Result,
+            timestamp = post.Date
+        };
 
         Mappings.PostToDb.postStatusMap.TryGetValue(post.Status, out _postStatus);
         postParams.status = _postStatus;

@@ -21,6 +21,18 @@ MODE=0 # 0 - Future, 1 - Now, 2 - at date
 PUBLISH_HOUR=24
 PUBLISH_MIN=0
 
+#--- Discord ---
+DISCORD_TOKEN="" # developers
+DISCORD_ID=""
+LOGO_URL=""
+AUTHOR_NAME=""
+AUTHOR_NAME_RU=""
+ADS=""
+
+#--- Telegram ---
+TELEGRAM_BOT_TOKEN="" # Bot Father
+TELEGRAM_CHAT_ID= # https://t.me/chatid_echo_bot or https://api.telegram.org/bot{TOKEN}/getUpdates
+
 ```
 
 * Get client_secret from google console https://console.cloud.google.com/apis/credentials? OAUTH 2

@@ -12,6 +12,7 @@ public class PostParams
     public string url { get; set; }
     public string imageUrl { get; set; }
     public DateTimeOffset timestamp { get; set; }
+    [Comment("Publish= 0, Future=1, Private=2 .Draft=3, Pending=4,Trash=5")]
     public byte status { get; set; }
     
     public int VideoIdx { get; set; }

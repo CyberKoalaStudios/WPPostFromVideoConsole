@@ -21,5 +21,5 @@ public class Video
     // public bool IsSentDiscord { get; set; }
     // public bool IsSentTelegram { get; set; }
     
-    public List<PostParams> PostParams { get; set; }
+    public List<Post> PostParams { get; set; }
 }

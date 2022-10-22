@@ -4,6 +4,7 @@ using WPPostFromVideoConsole.Context;
 using WPPostFromVideoConsole.CrossPosting;
 using WPPostFromVideoConsole.Helpers;
 using WPPostFromVideoConsole.Models;
+using Post = WPPostFromVideoConsole.Models.Post;
 
 namespace WPPostFromVideoConsole.Workers;
 
@@ -23,7 +24,7 @@ public class PostWorker
         MyUploads.PostAndVideoPublishedInDb += OnPostWithVideoPublished;
     }
 
-    private void OnPostPublished(Post post)
+    private void OnPostPublished(WordPressPCL.Models.Post post)
     {
         switch (post.Status)
         {
@@ -44,14 +45,14 @@ public class PostWorker
             }
         }
     }   
-    private void OnPostWithVideoPublished(Post post, Video video)
+    private void OnPostWithVideoPublished(WordPressPCL.Models.Post post, Video video)
     {
         switch (post.Status)
         {
             case Status.Publish:
             {
-                var discordPost = _discordSender.CreateFromWordPress(post);
-                var telegramPost = _telegramSender.CreateFromWordPress(post);
+                _discordSender.CreateFromWordPress(post);
+                 _telegramSender.CreateFromWordPress(post);
                 break;
             }
             case Status.Future:
@@ -70,38 +71,40 @@ public class PostWorker
         var telegramPost = _telegramSender.CreateFromYouTube(video);
     }
 
-    private void PutPostInDb(Post post)
+    private void PutPostInDb(WordPressPCL.Models.Post post)
     {
-        var postParams = new PostParams
+        var postParams = new Post
         {
-            postName = post.Title.Rendered,
-            description = Formatter.StripHtml(post.Content.Rendered),
-            url = post.Link,
-            imageUrl = WordPressWorker.Instance.GetMediaUrlById(post.FeaturedMedia).Result,
-            timestamp = post.Date
+            PostName = post.Title.Rendered,
+            Description = Formatter.StripHtml(post.Content.Rendered),
+            Url = post.Link,
+            ImageUrl = WordPressWorker.Instance.GetMediaUrlById(post.FeaturedMedia).Result,
+            Timestamp = post.Date,
+            WordpressId = post.Id
         };
 
         Mappings.PostToDb.postStatusMap.TryGetValue(post.Status, out _postStatus);
-        postParams.status = _postStatus;
+        postParams.Status = _postStatus;
         
         using var db = new VideoContext();
         DbWorker.Instance.PutPostInDb(db, postParams);
         // TODO: Create service that checks status of post -> if published -> Update In DB and publish to discord/Telegram
     }
     
-    private void PutPostWithVideoInDb(Post post, Video video)
+    private void PutPostWithVideoInDb(WordPressPCL.Models.Post post, Video video)
     {
-        var postParams = new PostParams
+        var postParams = new Post
         {
-            postName = post.Title.Rendered,
-            description = Formatter.StripHtml(post.Content.Rendered),
-            url = post.Link,
-            imageUrl = WordPressWorker.Instance.GetMediaUrlById(post.FeaturedMedia).Result,
-            timestamp = post.Date
+            PostName = post.Title.Rendered,
+            Description = Formatter.StripHtml(post.Content.Rendered),
+            Url = post.Link,
+            ImageUrl = WordPressWorker.Instance.GetMediaUrlById(post.FeaturedMedia).Result,
+            Timestamp = post.Date,
+            WordpressId = post.Id,
         };
 
         Mappings.PostToDb.postStatusMap.TryGetValue(post.Status, out _postStatus);
-        postParams.status = _postStatus;
+        postParams.Status = _postStatus;
         
         using var db = new VideoContext();
         DbWorker.Instance.PutPostWithVideoInDb(db, postParams, video);

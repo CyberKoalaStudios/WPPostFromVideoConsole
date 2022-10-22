@@ -17,6 +17,13 @@ public class DbWorker : IDb
         return videoFromDb;
     }
 
+    public List<Post> GetPostsFromDb(VideoContext context)
+    {
+        var videoFromDb = context.Posts
+            .OrderBy(b => b.Timestamp).ToList();
+
+        return videoFromDb;
+    }
     public Video? GetVideoFromDbById(VideoContext context, string id)
     {
         var videoFromDb = context.Videos
@@ -39,15 +46,16 @@ public class DbWorker : IDb
         return stateEntitiesWritten;
     }
 
-    public void PutPostInDb(VideoContext ctx, PostParams post)
+    public void PutPostInDb(VideoContext ctx, Post post)
     {
         ctx.Add(post);
         ctx.SaveChanges();
     }
     
-    public void PutPostWithVideoInDb(VideoContext ctx, PostParams post, Video video)
+    public void PutPostWithVideoInDb(VideoContext ctx, Post post, Video video)
     {
         post.Video = video;
+        post.VideoIdx = video.Idx;
         ctx.Posts.Add(post);
         var num = ctx.SaveChanges();
     }
@@ -55,6 +63,12 @@ public class DbWorker : IDb
     public void EditVideoInDb(VideoContext context, Video video)
     {
         context.Videos.Update(video);
+        context.SaveChanges();
+    }    
+    
+    public void EditPostInDb(VideoContext context, Post post)
+    {
+        context.Posts.Update(post);
         context.SaveChanges();
     }
 }

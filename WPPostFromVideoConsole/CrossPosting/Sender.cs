@@ -3,6 +3,7 @@ using DotNetEnv;
 using Telegram.Bot;
 using WordPressPCL.Models;
 using WPPostFromVideoConsole.Models;
+using Post = WordPressPCL.Models.Post;
 using Video = WPPostFromVideoConsole.Models.Video;
 
 namespace WPPostFromVideoConsole.CrossPosting;

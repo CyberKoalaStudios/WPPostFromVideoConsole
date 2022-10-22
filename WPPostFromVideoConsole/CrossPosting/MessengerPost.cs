@@ -8,6 +8,7 @@ using WordPressPCL.Models;
 using WPPostFromVideoConsole.Helpers;
 using WPPostFromVideoConsole.Models;
 using WPPostFromVideoConsole.Workers;
+using Post = WPPostFromVideoConsole.Models.Post;
 using Video = WPPostFromVideoConsole.Models.Video;
 
 namespace WPPostFromVideoConsole.CrossPosting;
@@ -20,11 +21,11 @@ internal class Telegram : MessengerPost
 {
     private TelegramBotClient _botClient;
     private Video? _video;
-    private Post _post;
+    private WordPressPCL.Models.Post _post;
     private long _chatId = (long)DotNetEnv.Env.GetInt("TELEGRAM_CHAT_ID");
     private string _authorNameRu = DotNetEnv.Env.GetString("AUTHOR_NAME_RU");
     
-    public Telegram(TelegramBotClient botClient, Post post)
+    public Telegram(TelegramBotClient botClient, WordPressPCL.Models.Post post)
     {
         _botClient = botClient;
         _post = post;
@@ -86,24 +87,23 @@ internal class Telegram : MessengerPost
 
 internal class Discord : MessengerPost
 {
-    private Video? _video;
-    private Post? _post;
+    private Post _post = new();
+
     private DiscordWebhookClient _webhookClient;
     private string _logoUrl = DotNetEnv.Env.GetString("LOGO_URL");
     private string _authorName = DotNetEnv.Env.GetString("AUTHOR_NAME");
     private string _authorNameRu = DotNetEnv.Env.GetString("AUTHOR_NAME_RU");
     private string _ads = DotNetEnv.Env.GetString("ADS");
-    private PostParams _postParams = new();
     public Discord(DiscordWebhookClient webhookClient, Video video)
     {
         _webhookClient = webhookClient;
-        _video = video;
+        _post = new();
         
-        _postParams.postName = _video.Title;
-        _postParams.description = _video.Description;
-        _postParams.url = $"https://www.youtube.com/watch?v={_video.Id}";
-        _postParams.imageUrl = _video.Thumbnail;
-        _postParams.timestamp = _video.PublishedAt ?? DateTime.Now;
+        _post.PostName = video.Title;
+        _post.Description = video.Description;
+        _post.Url = $"https://www.youtube.com/watch?v={video.Id}";
+        _post.ImageUrl = video.Thumbnail;
+        _post.Timestamp = video.PublishedAt ?? DateTime.Now;
         // _postParams.status =  PostWorker._videoStatus;
 
         throw new NotImplementedException();
@@ -113,16 +113,16 @@ internal class Discord : MessengerPost
         Console.WriteLine("Discord post from YT sended");
     }
     
-    public Discord(DiscordWebhookClient webhookClient, Post post)
+    public Discord(DiscordWebhookClient webhookClient, WordPressPCL.Models.Post postFromWordPress)
     {
         _webhookClient = webhookClient;
-        _post = post;
+        _post = new();
         
-        _postParams.postName = _post.Title.Rendered;
-        _postParams.description = Formatter.StripHtml(_post.Content.Rendered);
-        _postParams.url = _post.Link;
-        _postParams.imageUrl = WordPressWorker.Instance.GetMediaUrlById(_post.FeaturedMedia).Result;
-        _postParams.timestamp = _post.Date;
+        _post.PostName = postFromWordPress.Title.Rendered;
+        _post.Description = Formatter.StripHtml(postFromWordPress.Content.Rendered);
+        _post.Url = postFromWordPress.Link;
+        _post.ImageUrl = WordPressWorker.Instance.GetMediaUrlById(postFromWordPress.FeaturedMedia).Result;
+        _post.Timestamp = postFromWordPress.Date;
 
         var thread = new Thread(SendPost);
         thread.Start();
@@ -150,20 +150,20 @@ internal class Discord : MessengerPost
         
         var embed = new EmbedBuilder
         {
-            Title = _postParams.postName, //$"Семинарус - {_postParams.postName}",
+            Title = _post.PostName, //$"Семинарус - {_postParams.postName}",
             Author = author,
-            Description = _postParams.description, // Maybe need trimming
+            Description = _post.Description, // Maybe need trimming
             Color = Color.Orange,
             Fields = fields,
             Footer = footer,
-            Url = _postParams.url,
-            Timestamp = _postParams.timestamp,
-            ImageUrl = _postParams.imageUrl
+            Url = _post.Url,
+            Timestamp = _post.Timestamp,
+            ImageUrl = _post.ImageUrl
         };
 
         // Webhooks are able to send multiple embeds per message
         // As such, your embeds must be passed as a collection.
-        await _webhookClient.SendMessageAsync($"@everyone {_postParams.postName} - {_postParams.url}", embeds: new[] { embed.Build() });
+        await _webhookClient.SendMessageAsync($"@everyone {_post.PostName} - {_post.Url}", embeds: new[] { embed.Build() });
     }
     
 }

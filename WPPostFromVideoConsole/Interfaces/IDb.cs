@@ -6,8 +6,10 @@ namespace WPPostFromVideoConsole.Interfaces;
 public interface IDb
 {
     public Video? GetVideoFromDb(VideoContext context);
+    public List<Post> GetPostsFromDb(VideoContext context);
     public Video? GetVideoFromDbById(VideoContext context, string id);
     public int AddVideoToDb(VideoContext context, Video? video);
-    public void PutPostInDb(VideoContext ctx, PostParams post);
+    public void PutPostInDb(VideoContext ctx, Post post);
     public void EditVideoInDb(VideoContext ctx, Video video);
+    public void EditPostInDb(VideoContext ctx, Post post);
 }

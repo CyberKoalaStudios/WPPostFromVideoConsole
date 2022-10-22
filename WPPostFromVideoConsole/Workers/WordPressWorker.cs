@@ -6,6 +6,7 @@ using WPPostFromVideoConsole.Helpers;
 using WPPostFromVideoConsole.Interfaces;
 using WPPostFromVideoConsole.MediaTypes;
 using WPPostFromVideoConsole.Models;
+using Post = WordPressPCL.Models.Post;
 
 namespace WPPostFromVideoConsole.Workers;
 
@@ -40,15 +41,19 @@ public class WordPressWorker : IWordPress
         var iframe =
             $"<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/{video?.Id}\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>";
 
-        var delayToAdd = 0;
-        if (postPublishType == PostPublishType.Scheduled) delayToAdd = _postDelay;
+        DateTime publishDate = DateTime.Now;
+       
+        if (postPublishType == PostPublishType.Scheduled)
+        {
+            publishDate = DateTime.Today.AddDays(_postDelay).AddHours(_publishHour);
+        }
 
         var post = new Post
         {
             Title = new Title(video?.Title),
             Content = new Content($"{iframe}\n{video?.Description}"),
             Status = Status.Future,
-            Date = DateTime.Today.AddDays(delayToAdd).AddHours(_publishHour),
+            Date = publishDate,
             Categories = new List<int> { _postCategory },
             CommentStatus = OpenStatus.Open,
             FeaturedMedia = createdMedia?.Id

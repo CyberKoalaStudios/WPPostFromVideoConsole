@@ -21,7 +21,7 @@ namespace WPPostFromVideoConsole;
 ///     Relies on the Google APIs Client Library for .NET, v1.7.0 or higher.
 ///     See https://developers.google.com/api-client-library/dotnet/get_started
 /// </summary>
-internal class MyUploads
+public class MyUploads
 {
     private PostPublishType _postPublishType;
 

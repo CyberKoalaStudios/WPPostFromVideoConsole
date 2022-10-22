@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WPPostFromVideoConsole.Context;
 
@@ -10,9 +11,11 @@ using WPPostFromVideoConsole.Context;
 namespace WPPostFromVideoConsole.Migrations
 {
     [DbContext(typeof(VideoContext))]
-    partial class VideoContextModelSnapshot : ModelSnapshot
+    [Migration("20221022075712_posts10")]
+    partial class posts10
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.0-rc.2.22472.11");
@@ -49,9 +52,6 @@ namespace WPPostFromVideoConsole.Migrations
                     b.Property<int>("VideoIdx")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("WordpressId")
-                        .HasColumnType("INTEGER");
-
                     b.HasKey("PostId");
 
                     b.HasIndex("VideoIdx");
@@ -75,7 +75,7 @@ namespace WPPostFromVideoConsole.Migrations
 
                     b.Property<bool>("IsPublished")
                         .HasColumnType("INTEGER")
-                        .HasComment("Wordpress Publication Status; Whether future or now = true. If video post exist in WP");
+                        .HasComment("Wordpress Publication Status; Whether future or now = true. If videopost exist in WP");
 
                     b.Property<DateTime?>("PublishedAt")
                         .HasColumnType("TEXT");

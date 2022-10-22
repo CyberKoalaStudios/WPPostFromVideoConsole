@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WPPostFromVideoConsole.Context;
 
@@ -10,47 +11,45 @@ using WPPostFromVideoConsole.Context;
 namespace WPPostFromVideoConsole.Migrations
 {
     [DbContext(typeof(VideoContext))]
-    partial class VideoContextModelSnapshot : ModelSnapshot
+    [Migration("20221021180834_posts7")]
+    partial class posts7
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.0-rc.2.22472.11");
 
-            modelBuilder.Entity("WPPostFromVideoConsole.Models.Post", b =>
+            modelBuilder.Entity("WPPostFromVideoConsole.Models.PostParams", b =>
                 {
                     b.Property<int>("PostId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PostName")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<byte>("Status")
-                        .HasColumnType("INTEGER")
-                        .HasComment("Publish= 0, Future=1, Private=2 .Draft=3, Pending=4,Trash=5");
-
-                    b.Property<DateTimeOffset>("Timestamp")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("VideoIdx")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("WordpressId")
+                    b.Property<string>("description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("imageUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("postName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte>("status")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("timestamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("url")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.HasKey("PostId");
 
@@ -74,8 +73,7 @@ namespace WPPostFromVideoConsole.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsPublished")
-                        .HasColumnType("INTEGER")
-                        .HasComment("Wordpress Publication Status; Whether future or now = true. If video post exist in WP");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("PublishedAt")
                         .HasColumnType("TEXT");
@@ -90,13 +88,10 @@ namespace WPPostFromVideoConsole.Migrations
 
                     b.HasKey("Idx");
 
-                    b.HasIndex("Id")
-                        .IsUnique();
-
                     b.ToTable("Videos");
                 });
 
-            modelBuilder.Entity("WPPostFromVideoConsole.Models.Post", b =>
+            modelBuilder.Entity("WPPostFromVideoConsole.Models.PostParams", b =>
                 {
                     b.HasOne("WPPostFromVideoConsole.Models.Video", "Video")
                         .WithMany("PostParams")

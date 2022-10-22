@@ -1,95 +1,86 @@
-using System.Net;
+using DotNetEnv;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Google.Apis.YouTube.v3;
+using Google.Apis.YouTube.v3.Data;
 using Microsoft.EntityFrameworkCore;
-using WordPressPCL;
 using WordPressPCL.Models;
 using WPPostFromVideoConsole.Context;
-using WPPostFromVideoConsole.Interfaces;
-using WPPostFromVideoConsole.Models;
+using WPPostFromVideoConsole.Mappings;
+using WPPostFromVideoConsole.MediaTypes;
 using WPPostFromVideoConsole.Workers;
+using Post = WordPressPCL.Models.Post;
+using Video = WPPostFromVideoConsole.Models.Video;
+using VideoStatus = WPPostFromVideoConsole.MediaTypes.VideoStatus;
 
 namespace WPPostFromVideoConsole;
 
-
-public enum PostPublishType
-{
-    Scheduled,
-    Now,
-    AtDate
-}
-
 /// <summary>
-/// YouTube Data API v3 sample: retrieve my uploads.
-/// Relies on the Google APIs Client Library for .NET, v1.7.0 or higher.
-/// See https://developers.google.com/api-client-library/dotnet/get_started
+///     YouTube Data API v3 sample: retrieve my uploads.
+///     Relies on the Google APIs Client Library for .NET, v1.7.0 or higher.
+///     See https://developers.google.com/api-client-library/dotnet/get_started
 /// </summary>
 internal class MyUploads
 {
-    //pass the Wordpress REST API base address as string
-    WordPressClient _wordPressClient = new WordPressClient(System.Environment.GetEnvironmentVariable("WP_REST_URI"));
-
     private PostPublishType _postPublishType;
-    private Dictionary<int, PostPublishType> _postTypeDict = new()  
-    {
-        { 0, PostPublishType.Scheduled  },
-        { 1, PostPublishType.Now },
-        { 2, PostPublishType.AtDate }
-    };
 
-    
-    [STAThread]
-    public static void GetUploads(string[] args)
+    // ReSharper disable once NotAccessedField.Local
+    private PostWorker _postWorker; // Subscribe to delegate on init
+    private VideoStatus _videoStatus;
+
+    private MyUploads()
     {
-        DotNetEnv.Env.TraversePath().Load();
+        _postWorker = new PostWorker();
+    }
+
+    public static event Action<Post, Video> PostAndVideoPublishedInDb = delegate { };
+
+    // [STAThread]
+    public static void GetUploads(IEnumerable<string> args)
+    {
+        Env.TraversePath().Load();
+
         Console.WriteLine("YouTube Data API: My Uploads");
         Console.WriteLine("============================");
 
         try
         {
-            foreach (var arg in args)
-            {
-                new MyUploads().Run(arg).Wait();
-            }
+            foreach (var arg in args) new MyUploads().Run(arg).Wait();
         }
         catch (AggregateException ex)
         {
-            foreach (var e in ex.InnerExceptions)
-            {
-                Console.WriteLine("Error: " + e.Message);
-            }
+            foreach (var e in ex.InnerExceptions) Console.WriteLine("Error: " + e.Message);
         }
     }
 
     private async Task Run(string clientSecretsFile)
     {
         UserCredential credential;
-        
+
         await using var db = new VideoContext();
-        db.Database.Migrate();
-        
-        await using(var stream = new System.IO.FileStream(clientSecretsFile, FileMode.Open, FileAccess.Read))
+        await db.Database.MigrateAsync();
+
+        await using (var stream = new FileStream(clientSecretsFile, FileMode.Open, FileAccess.Read))
         {
             credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                GoogleClientSecrets.Load(stream).Secrets,
+                (await GoogleClientSecrets.FromStreamAsync(stream)).Secrets,
                 // This OAuth 2.0 access scope allows for read-only access to the authenticated 
                 // user's account, but not other types of account access.
                 new[] { YouTubeService.Scope.YoutubeReadonly },
                 "user",
                 CancellationToken.None,
-                new FileDataStore(this.GetType().ToString())
+                new FileDataStore(GetType().ToString())
             );
         }
 
-        var youtubeService = new YouTubeService(new BaseClientService.Initializer()
+        var youtubeService = new YouTubeService(new BaseClientService.Initializer
         {
             HttpClientInitializer = credential,
-            ApplicationName = this.GetType().ToString()
+            ApplicationName = GetType().ToString()
         });
 
-        var channelsListRequest = youtubeService.Channels.List("contentDetails");
+        var channelsListRequest = youtubeService.Channels.List("contentDetails, status");
         channelsListRequest.Mine = true;
 
         // Retrieve the contentDetails part of the channel resource for the authenticated user's channel.
@@ -106,51 +97,83 @@ internal class MyUploads
             var nextPageToken = "";
             // while (nextPageToken != null)
             // {
-                var playlistItemsListRequest = youtubeService.PlaylistItems.List("snippet");
-                playlistItemsListRequest.PlaylistId = uploadsListId;
-                playlistItemsListRequest.MaxResults = 5;
-                playlistItemsListRequest.PageToken = nextPageToken;
+            var playlistItemsListRequest = youtubeService.PlaylistItems.List("snippet, status");
+            playlistItemsListRequest.PlaylistId = uploadsListId;
+            playlistItemsListRequest.MaxResults = 1;
+            playlistItemsListRequest.PageToken = nextPageToken;
 
-                // Retrieve the list of videos uploaded to the authenticated user's channel.
-                var playlistItemsListResponse = await playlistItemsListRequest.ExecuteAsync();
+            // Retrieve the list of videos uploaded to the authenticated user's channel.
+            var playlistItemsListResponse = await playlistItemsListRequest.ExecuteAsync();
 
-                foreach (var playlistItem in playlistItemsListResponse.Items)
-                {
-                    // Print information about each video.
-                    Console.WriteLine("{0} ({1})", playlistItem.Snippet.Title, playlistItem.Snippet.ResourceId.VideoId);
-                    Console.WriteLine($"Published: {playlistItem.Snippet.PublishedAt.Value}");
-                }
+            foreach (var playlistItem in playlistItemsListResponse.Items)
+            {
+                // Print information about each video.
+                Console.WriteLine("{0} ({1})", playlistItem.Snippet.Title, playlistItem.Snippet.ResourceId.VideoId);
+                Console.WriteLine($"Published: {playlistItem.Snippet.PublishedAt}");
 
-                var latestItem = playlistItemsListResponse.Items.First();
-                
-                var videoFromDb = DbWorker.Instance.GetVideoFromDbById(db, latestItem.Snippet.ResourceId.VideoId);
-                
-                if (videoFromDb?.Id == latestItem.Snippet.ResourceId.VideoId) continue;
-                // if (videoFromDb.IsPublished) continue;
-                
-                var video = new Video()
-                {
-                    Id = latestItem.Snippet.ResourceId.VideoId,
-                    Description = latestItem.Snippet.Description,
-                    PublishedAt = latestItem.Snippet.PublishedAt.Value,
-                    Title = latestItem.Snippet.Title,
-                    Thumbnail = latestItem.Snippet.Thumbnails.Maxres.Url,
-                    IsPublished = false
-                };
-                
-                var createdMedia =  await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
-                
-                if (_postTypeDict.TryGetValue(DotNetEnv.Env.GetInt("MODE"), out _postPublishType))   // TryGetValue, on popular request
-                {
-                    Console.WriteLine("For key = \"MODE\", value = {0}.", _postPublishType);
-                }
+                await ProcessVideo(playlistItem, db);
+            }
 
-                var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia, _postPublishType);
-
-                var addedToDb =  DbWorker.Instance.AddVideoToDb(video, db);
-
-                nextPageToken = playlistItemsListResponse.NextPageToken;
+            nextPageToken = playlistItemsListResponse.NextPageToken;
             // }
         }
+    }
+
+    private async Task ProcessVideo(PlaylistItem playlistItem, VideoContext db)
+    {
+        var status = playlistItem.Status.PrivacyStatus;
+        VideoToSite.VideoStatusMap.TryGetValue(status, out _videoStatus);
+
+        VideoToSite.VideoStatusToPostMap.TryGetValue(_videoStatus, out _postPublishType);
+        
+// #if DEBUG
+//
+//         var mockVideo = new Video
+//         {
+//             Id = playlistItem.Snippet.ResourceId.VideoId,
+//             Description = playlistItem.Snippet.Description,
+//             PublishedAt = playlistItem.Snippet.PublishedAt,
+//             Title = playlistItem.Snippet.Title,
+//
+//             //ReSharper disable once CommentTypo
+//
+//             Thumbnail = playlistItem.Snippet.Thumbnails.Maxres.Url,
+//             IsPublished = false
+//         };
+//         var testPost = await WordPressWorker.Instance.GetPostById(9094);
+//         testPost.Status = Status.Future;
+//
+//         //PostPublishedInDb?.Invoke(testPost);
+//         //var createdMediaTest = await WordPressWorker.Instance.UploadThumbToWp(mockVideo.Thumbnail, "preview.jpg", mockVideo.Id);
+//
+//         //VideoPublished?.Invoke(mockVideo);
+//
+//         //PostPublishedInDb?.Invoke(testPost);
+//         PostAndVideoPublishedInDb.Invoke(testPost, mockVideo);
+//         // END TEST
+// #endif
+
+        var videoFromDb = DbWorker.Instance.GetVideoFromDbById(db, playlistItem.Snippet.ResourceId.VideoId);
+
+        if (videoFromDb?.Id == playlistItem.Snippet.ResourceId.VideoId)
+            return;
+
+        var video = new Video
+        {
+            Id = playlistItem.Snippet.ResourceId.VideoId,
+            Description = playlistItem.Snippet.Description,
+            PublishedAt = playlistItem.Snippet.PublishedAt,
+            Title = playlistItem.Snippet.Title,
+            Thumbnail = playlistItem.Snippet.Thumbnails.Maxres.Url,
+            IsPublished = false
+        };
+
+        var createdMedia =
+            await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
+        var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia, _postPublishType);
+        var addedToDb = DbWorker.Instance.AddVideoToDb(db, video);
+
+        if (addedToDb != -1 && createdPost != null) PostAndVideoPublishedInDb.Invoke(createdPost, video);
+        //PostPublishedInDb?.Invoke(createdPost);
     }
 }

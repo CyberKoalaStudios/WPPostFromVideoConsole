@@ -30,5 +30,5 @@ public class VideoContext : DbContext
     {
         options.UseSqlite($"Data Source={DbPath}");
     }
-#pragma warning enable CS8618
+#pragma warning restore CS8618
 }

@@ -2,5 +2,10 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=d0160ec2_002Dcbe5_002D4b5e_002Db302_002D75bdd734397a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Tests" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;TestAncestor&gt;
     &lt;TestId&gt;NUnit3x::C2BE3614-6420-4459-8D79-C2417BDD74DC::net6.0::WPPostFromVideoUnitTests.Tests&lt;/TestId&gt;
+    &lt;TestId&gt;NUnit3x::C2BE3614-6420-4459-8D79-C2417BDD74DC::net6.0::WPPostFromVideoUnitTests.MessengerSendUnitTest.PublishedPostWithVideoTest&lt;/TestId&gt;
+    &lt;TestId&gt;NUnit3x::C2BE3614-6420-4459-8D79-C2417BDD74DC::net6.0::WPPostFromVideoUnitTests.MessengerSendUnitTest.FuturePostWithVideoTest&lt;/TestId&gt;
   &lt;/TestAncestor&gt;
-&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestRunner/EnvironmentVariablesIndexed/=DISCORD_005FID/@EntryIndexedValue">1032918522940117052</s:String>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestRunner/EnvironmentVariablesIndexed/=DISCORD_005FTOKEN/@EntryIndexedValue">Jal1fORZd47_Ty0weEad4FljNUiD-5Y9X71rEqMxAL7rqAr0nnGFULnEAgsZ3wh6amm8</s:String>
+	</wpf:ResourceDictionary>

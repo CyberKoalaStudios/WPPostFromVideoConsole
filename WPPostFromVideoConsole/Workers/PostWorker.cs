@@ -22,7 +22,7 @@ public class PostWorker
         Publisher.PostStatusChanged += OnPostPublished;
     }
 
-    private void OnPostPublished(Post post)
+    public void OnPostPublished(Post post)
     {
         switch (post.Status)
         {
@@ -49,7 +49,7 @@ public class PostWorker
         }
     }
 
-    private void OnPostWithVideoPublished(Post post, Video video)
+    public void OnPostWithVideoPublished(Post post, Video video)
     {
         switch (post.Status)
         {

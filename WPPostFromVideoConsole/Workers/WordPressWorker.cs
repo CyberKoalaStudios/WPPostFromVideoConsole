@@ -18,16 +18,22 @@ public class WordPressWorker : IWordPress
     private readonly int _publishHour = Env.GetInt("PUBLISH_HOUR");
     private readonly string _username = Env.GetString("WP_USERNAME");
 
-    private readonly WordPressClient _wordPressClient = new(Environment.GetEnvironmentVariable("WP_REST_URI"));
+    private WordPressClient _wordPressClient = new(Environment.GetEnvironmentVariable("WP_REST_URI"));
 
+    private WordPressWorker()
+    {
+        // _wordPressClient.Auth.UseBearerAuth(JWTPlugin.JWTAuthByEnriqueChavez);
+        // await _wordPressClient.Auth.RequestJWTokenAsync("username", "password");
+        // var isValidToken = await _wordPressClient.IsValidJWTokenAsync();
+        
+        _wordPressClient.Auth.UseBasicAuth(_username, _appPassword);
+    }
+    
     public async Task<MediaItem?> UploadThumbToWp(string url, string file, string id)
     {
         const string thumbFile = "preview.jpg";
 
         HttpHelper.DownloadFileAsync(url, file);
-
-        _wordPressClient.Auth.UseBasicAuth(_username,
-            _appPassword);
 
         Console.WriteLine("Uploading Thumbnail into WordPress");
         var createdMedia = await _wordPressClient.Media.CreateAsync(thumbFile, $"thumb_{id}.jpg");

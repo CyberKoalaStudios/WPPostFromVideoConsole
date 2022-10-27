@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+    <RunConfiguration>
+        <EnvironmentVariables>
+            <DISCORD_TOKEN>Jal1fORZd47_Ty0weEad4FljNUiD-5Y9X71rEqMxAL7rqAr0nnGFULnEAgsZ3wh6amm8</DISCORD_TOKEN>
+            <DISCORD_ID>1032918522940117052</DISCORD_ID>
+            <LOGO_URL>https://cyberkoalastudios.com/wp-content/uploads/2022/07/koala_face_150.png</LOGO_URL>
+            <AUTHOR_NAME>CyberKoala</AUTHOR_NAME>
+            <AUTHOR_NAME_RU>КиберКоала</AUTHOR_NAME_RU>
+            <ADS>Курсы</ADS>
+            <TELEGRAM_BOT_TOKEN>5602099011:AAE3dI66u0JqZ0-jd1j9kEVgyBlqe9y-KSc</TELEGRAM_BOT_TOKEN>
+            <TELEGRAM_CHAT_ID>-802015103</TELEGRAM_CHAT_ID>
+            
+        </EnvironmentVariables>
+    </RunConfiguration>
+</RunSettings>

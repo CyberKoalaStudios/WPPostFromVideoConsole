@@ -9,7 +9,8 @@ namespace WPPostFromVideoConsole.Models;
 [Index(nameof(Id), IsUnique = true)]
 public class Video
 {
-    [Key] public int Idx { get; set; }
+    [Key] 
+    public int Idx { get; set; }
     public string Id { get; set; }
     public string Title { get; set; }
     public string Description { get; set; }
@@ -19,6 +20,6 @@ public class Video
     [Comment("Wordpress Publication Status; Whether future or now = true. If video post exist in WP")]
     public bool IsPublished { get; set; }
 
-    public List<Post> PostParams { get; set; }
+    public List<Post> Post { get; set; }
 }
 #pragma warning restore CS8618

@@ -67,8 +67,7 @@ public class DbWorker : IDb
     public static void PutPostWithVideoInDb(VideoContext ctx, Post post, Video video)
     {
         post.Video = video;
-        post.VideoIdx = video.Idx;
-
+        
         ctx.Posts.Add(post);
         ctx.SaveChanges();
 

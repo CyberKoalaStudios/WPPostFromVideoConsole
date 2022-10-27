@@ -20,7 +20,7 @@ internal class Telegram : MessengerPost
 {
     private readonly string _authorNameRu = Env.GetString("AUTHOR_NAME_RU");
     private readonly TelegramBotClient _botClient;
-    private readonly long _chatId = Env.GetInt("TELEGRAM_CHAT_ID");
+    private long _chatId = Convert.ToInt64(Env.GetString("TELEGRAM_CHAT_ID"));
     private readonly Post _post;
     private Video? _video;
 
@@ -68,7 +68,7 @@ internal class Telegram : MessengerPost
 
         caption = _post.Title.Rendered;
         caption = Formatter.StripHtml(caption);
-
+        
         // Instant View
         await _botClient.SendTextMessageAsync(
             new ChatId(_chatId),
@@ -148,7 +148,7 @@ internal class Discord : MessengerPost
         {
             Title = _post.PostName, //$"Семинарус - {_postParams.postName}",
             Author = author,
-            Description = _post.Description, // Maybe need trimming
+            Description =  Formatter.Truncate(_post.Description, 4090),
             Color = Color.Orange,
             Fields = fields,
             Footer = footer,

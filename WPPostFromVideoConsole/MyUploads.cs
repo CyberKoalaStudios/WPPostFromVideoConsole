@@ -123,7 +123,6 @@ public class MyUploads
     {
         var status = playlistItem.Status.PrivacyStatus;
         VideoToSite.VideoStatusMap.TryGetValue(status, out _videoStatus);
-
         VideoToSite.VideoStatusToPostMap.TryGetValue(_videoStatus, out _postPublishType);
         
         var videoFromDb = DbWorker.Instance.GetVideoFromDbById(db, playlistItem.Snippet.ResourceId.VideoId);

@@ -74,6 +74,12 @@ public class WordPressWorker : IWordPress
     {
         return await _wordPressClient.Posts.GetAllAsync();
     }
+    
+    public async Task<Post?> GetLatestPost()
+    {
+        var posts = await _wordPressClient.Posts.GetAllAsync();
+        return posts.FirstOrDefault();
+    }
 
     public async Task<Post> GetPostById(int postId)
     {

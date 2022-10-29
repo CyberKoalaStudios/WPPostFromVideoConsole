@@ -7,7 +7,7 @@ Env.TraversePath().Load();
 
 var secrets = new[] { Env.GetString("CLIENT_SECRETS_FILE") };
 
-const bool forcePublishNow = true;
+bool forcePublishNow = Env.GetBool("PUBLISH_NOW");
 if (forcePublishNow)
 {
     PublishNowLatestPostFromWp();
@@ -27,6 +27,7 @@ void PublishNowLatestPostFromWp()
     
     var post = WordPressWorker.Instance.GetLatestPost().Result;
     if (post == null) return;
+    
     _discordSender.CreateFromWordPress(post);
     _telegramSender.CreateFromWordPress(post);
 }

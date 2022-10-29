@@ -26,7 +26,7 @@ public class Publisher
             var reversed = PostToDb.PostStatusMap.ToDictionary(x => x.Value, x => x.Key);
             reversed.TryGetValue(post.Status, out var statusFromInnerDb);
 
-            if (statusFromInnerDb is not Status.Publish) continue;
+            // if (statusFromInnerDb is not Status.Publish) continue;
             
             var wpPost = await WordPressWorker.Instance.GetPostById(post.WordpressId);
             

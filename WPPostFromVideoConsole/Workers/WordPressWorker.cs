@@ -91,4 +91,5 @@ public class WordPressWorker : IWordPress
         var media = await _wordPressClient.Media.GetByIDAsync(mediaId);
         return media.Link;
     }
+    
 }

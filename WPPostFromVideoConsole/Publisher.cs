@@ -25,14 +25,11 @@ public class Publisher
         {
             var reversed = PostToDb.PostStatusMap.ToDictionary(x => x.Value, x => x.Key);
             reversed.TryGetValue(post.Status, out var statusFromInnerDb);
-
-            // if (statusFromInnerDb is not Status.Publish) continue;
             
             var wpPost = await WordPressWorker.Instance.GetPostById(post.WordpressId);
             
             if (wpPost.Status == statusFromInnerDb) continue;
             
-            // TODO: Debug
             PostToDb.PostStatusMap.TryGetValue(wpPost.Status, out var newStatus);
 
             // If Status = Publish
@@ -41,10 +38,15 @@ public class Publisher
 
             // Send to Tg, Discord
             PostStatusChanged?.Invoke(wpPost);
-
+            
+            // Update attached video status: TODO: handle case if YouTube Status updated, but WP is not
+            var attachedVideoIndex = post.VideoIdx;
+            var video = DbWorker.Instance.GetVideoFromDbByIdx(context, attachedVideoIndex);
+            video.IsPublished = true;
+            post.Video = video;
+            
             context.Update(post);
-
-            await context.SaveChangesAsync();
+            context.SaveChanges();
         }
     }
 }

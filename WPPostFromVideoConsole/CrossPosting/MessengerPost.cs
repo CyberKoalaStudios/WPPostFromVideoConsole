@@ -3,7 +3,10 @@ using Discord.Webhook;
 using DotNetEnv;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 using WPPostFromVideoConsole.Helpers;
+using WPPostFromVideoConsole.Mappings;
 using WPPostFromVideoConsole.Workers;
 using Post = WordPressPCL.Models.Post;
 using Video = WPPostFromVideoConsole.Models.Video;
@@ -16,11 +19,13 @@ internal abstract class MessengerPost
 
 #region Messengers
 
+
 internal class Telegram : MessengerPost
 {
     private readonly string _authorNameRu = Env.GetString("AUTHOR_NAME_RU");
     private readonly TelegramBotClient _botClient;
     private long _chatId = Convert.ToInt64(Env.GetString("TELEGRAM_CHAT_ID"));
+    private int _telegramPostMode = Env.GetInt("TELEGRAM_POST_MODE");
     private readonly Post _post;
     private Video? _video;
 
@@ -28,10 +33,7 @@ internal class Telegram : MessengerPost
     {
         _botClient = botClient;
         _post = post;
-
-        // var task = new Task(PublishNow);
-        // task.Start();
-        // task.GetAwaiter().GetResult();
+        
         PublishNow().GetAwaiter().GetResult();
 
         Console.WriteLine("Telegram post sent");
@@ -53,28 +55,38 @@ internal class Telegram : MessengerPost
                       $"{Formatter.StripHtml(_post.Content.Rendered)}\n" +
                       $"<i>Источник: </i><a href=\"{Formatter.StripHtml(_post.Link)}\">{_authorNameRu}</a>";
 
-        // caption = Formatter.StripHtml(caption);
-
-        // // Old
-        // Message message = await _botClient.SendPhotoAsync(
-        //     chatId: new ChatId(_chatId),
-        //     photo: WordPressWorker.Instance.GetMediaUrlById(_post?.FeaturedMedia ?? 6762).Result,
-        //     caption: caption,
-        //     replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithUrl(
-        //         "Посмотреть",
-        //         _post.Link)),
-        //     parseMode: ParseMode.Html
-        // );
-
-        caption = _post.Title.Rendered;
-        caption = Formatter.StripHtml(caption);
+        TelegramPostType.TelegramPostMap.TryGetValue((byte)_telegramPostMode, out var tgPostMode);
         
-        // Instant View
-        await _botClient.SendTextMessageAsync(
-            new ChatId(_chatId),
-            caption + "\n" +
-            $"https://t.me/iv?url={_post.Link}/&rhash=2c0efe862dc92c"
-        );
+        switch (tgPostMode)
+        {
+            case TelegramPostMode.InstantView:
+                caption = _post.Title.Rendered;
+                caption = Formatter.StripHtml(caption);
+
+                // TODO: Debug
+                var removedLastSlash = _post.Link.Remove(_post.Link.LastIndexOf('/'));
+
+                await _botClient.SendTextMessageAsync(
+                    new ChatId(_chatId),
+                    caption + "\n" +
+                    $"https://t.me/iv?url={removedLastSlash}&rhash=2c0efe862dc92c"
+                );
+                break;
+            case TelegramPostMode.InlineButton:
+                caption = Formatter.StripHtml(caption);
+                
+                Message message = await _botClient.SendPhotoAsync(
+                    chatId: new ChatId(_chatId),
+                    photo: WordPressWorker.Instance.GetMediaUrlById(_post?.FeaturedMedia ?? 6762).Result,
+                    caption: caption,
+                    replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithUrl(
+                        "Посмотреть",
+                        _post.Link)),
+                    parseMode: ParseMode.Html
+                );
+                break;
+        }
+        
     }
 }
 

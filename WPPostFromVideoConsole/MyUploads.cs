@@ -139,13 +139,13 @@ public class MyUploads
             Thumbnail = playlistItem.Snippet.Thumbnails.Maxres.Url,
             IsPublished = false
         };
-
+        
         var createdMedia =
-            await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, "preview.jpg", video.Id);
+            await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, video.Id);
+        
         var createdPost = await WordPressWorker.Instance.CreateNewPost(video, createdMedia, _postPublishType);
-        //var addedToDb = DbWorker.Instance.AddVideoToDb(db, video);
 
+        // TODO: Double invoke
         if (createdPost != null) PostAndVideoPublishedInDb.Invoke(createdPost, video);
-        //PostPublishedInDb?.Invoke(createdPost);
     }
 }

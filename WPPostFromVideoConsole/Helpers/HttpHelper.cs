@@ -17,4 +17,19 @@ public static class HttpHelper
         var fileBytes = await HttpClient.GetByteArrayAsync(uri);
         await File.WriteAllBytesAsync(outputPath, fileBytes);
     }
+    
+    public static async Task DownloadImageAsync(string directoryPath, string fileName, Uri uri)
+    {
+        using var httpClient = new HttpClient();
+        
+        var uriWithoutQuery = uri.GetLeftPart(UriPartial.Path);
+        var fileExtension = Path.GetExtension(uriWithoutQuery);
+        
+        var path = Path.Combine(directoryPath, $"{fileName}{fileExtension}");
+        Directory.CreateDirectory(directoryPath);
+        
+        var imageBytes = await httpClient.GetByteArrayAsync(uri);
+        await File.WriteAllBytesAsync(path, imageBytes);
+    }
+    
 }

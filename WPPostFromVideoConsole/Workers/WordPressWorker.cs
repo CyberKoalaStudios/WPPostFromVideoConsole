@@ -29,14 +29,15 @@ public class WordPressWorker : IWordPress
         _wordPressClient.Auth.UseBasicAuth(_username, _appPassword);
     }
     
-    public async Task<MediaItem?> UploadThumbToWp(string url, string file, string id)
+    public async Task<MediaItem?> UploadThumbToWp(string url, string id)
     {
         const string thumbFile = "preview.jpg";
 
-        HttpHelper.DownloadFileAsync(url, file);
+        var uri = new Uri(url, UriKind.Absolute);
+        await HttpHelper.DownloadImageAsync("thumbs", "preview", uri);
 
         Console.WriteLine("Uploading Thumbnail into WordPress");
-        var createdMedia = await _wordPressClient.Media.CreateAsync(thumbFile, $"thumb_{id}.jpg");
+        var createdMedia = await _wordPressClient.Media.CreateAsync(Path.Combine("thumbs", thumbFile), $"thumb_{id}.jpg");
 
         return createdMedia;
     }

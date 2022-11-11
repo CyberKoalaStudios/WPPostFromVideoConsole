@@ -31,8 +31,7 @@ public class Publisher
             if (wpPost.Status == statusFromInnerDb) continue;
             
             PostToDb.PostStatusMap.TryGetValue(wpPost.Status, out var newStatus);
-
-            // If Status = Publish
+            
             post.Status = newStatus;
             post.Timestamp = DateTimeOffset.Now;
 

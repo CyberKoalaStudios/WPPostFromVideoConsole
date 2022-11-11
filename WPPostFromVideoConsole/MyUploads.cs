@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
+using Google.Apis.Util;
 using Google.Apis.Util.Store;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
@@ -67,7 +68,12 @@ public class MyUploads
                 (await GoogleClientSecrets.FromStreamAsync(stream)).Secrets,
                 // This OAuth 2.0 access scope allows for read-only access to the authenticated 
                 // user's account, but not other types of account access.
-                new[] { YouTubeService.Scope.YoutubeReadonly },
+                new[] { 
+                    YouTubeService.Scope.YoutubeReadonly, 
+                    YouTubeService.Scope.YoutubeUpload,
+                    YouTubeService.Scope.Youtubepartner,
+                    YouTubeService.Scope.Youtube
+                },
                 "user",
                 CancellationToken.None,
                 new FileDataStore(GetType().ToString())
@@ -81,7 +87,12 @@ public class MyUploads
         });
 
         var channelsListRequest = youtubeService.Channels.List("contentDetails, status");
-        channelsListRequest.Mine = true;
+        // channelsListRequest.Mine = true;
+        channelsListRequest.Id = new Repeatable<string>(new []
+        {
+            //Env.GetString("CHANNEL_ID_CYBERKOALA"), 
+            Env.GetString("CHANNEL_ID_COOLDAY")
+        });
 
         // Retrieve the contentDetails part of the channel resource for the authenticated user's channel.
         var channelsListResponse = await channelsListRequest.ExecuteAsync();
@@ -97,7 +108,7 @@ public class MyUploads
             var nextPageToken = "";
             // while (nextPageToken != null)
             // {
-            var playlistItemsListRequest = youtubeService.PlaylistItems.List("snippet, status");
+            var playlistItemsListRequest = youtubeService.PlaylistItems.List("snippet, status, contentDetails");
             playlistItemsListRequest.PlaylistId = uploadsListId;
             playlistItemsListRequest.MaxResults = 1;
             playlistItemsListRequest.PageToken = nextPageToken;

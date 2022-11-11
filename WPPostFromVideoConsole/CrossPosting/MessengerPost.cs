@@ -23,6 +23,7 @@ internal abstract class MessengerPost
 internal class Telegram : MessengerPost
 {
     private readonly string _authorNameRu = Env.GetString("AUTHOR_NAME_RU");
+    private readonly string _rhash = Env.GetString("TELEGRAM_RHASH");
     private readonly TelegramBotClient _botClient;
     private long _chatId = Convert.ToInt64(Env.GetString("TELEGRAM_CHAT_ID"));
     private int _telegramPostMode = Env.GetInt("TELEGRAM_POST_MODE");
@@ -62,14 +63,13 @@ internal class Telegram : MessengerPost
             case TelegramPostMode.InstantView:
                 caption = _post.Title.Rendered;
                 caption = Formatter.StripHtml(caption);
-
-                // TODO: Debug
+                
                 var removedLastSlash = _post.Link.Remove(_post.Link.LastIndexOf('/'));
 
                 await _botClient.SendTextMessageAsync(
                     new ChatId(_chatId),
                     caption + "\n" +
-                    $"https://t.me/iv?url={removedLastSlash}&rhash=2c0efe862dc92c"
+                    $"https://t.me/iv?url={removedLastSlash}&rhash={_rhash}"
                 );
                 break;
             case TelegramPostMode.InlineButton:

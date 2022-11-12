@@ -62,8 +62,7 @@ internal class Telegram : MessengerPost
         {
             case TelegramPostMode.InstantView:
                 caption = _post.Title.Rendered;
-                caption = Formatter.StripHtml(caption);
-                
+
                 var removedLastSlash = _post.Link.Remove(_post.Link.LastIndexOf('/'));
 
                 await _botClient.SendTextMessageAsync(
@@ -73,8 +72,7 @@ internal class Telegram : MessengerPost
                 );
                 break;
             case TelegramPostMode.InlineButton:
-                caption = Formatter.StripHtml(caption);
-                
+
                 Message message = await _botClient.SendPhotoAsync(
                     chatId: new ChatId(_chatId),
                     photo: WordPressWorker.Instance.GetMediaUrlById(_post?.FeaturedMedia ?? 6762).Result,

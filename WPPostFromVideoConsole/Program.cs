@@ -1,5 +1,8 @@
 ﻿using DotNetEnv;
+using Microsoft.EntityFrameworkCore;
+using MySql.Data.MySqlClient;
 using WPPostFromVideoConsole;
+using WPPostFromVideoConsole.Context;
 using WPPostFromVideoConsole.CrossPosting;
 using WPPostFromVideoConsole.Workers;
 
@@ -8,6 +11,18 @@ Env.TraversePath().Load();
 var secrets = new[] { Env.GetString("CLIENT_SECRETS_FILE") };
 
 bool forcePublishNow = Env.GetBool("PUBLISH_NOW");
+
+await using var db = new VideoContext();
+try
+{
+    await db.Database.EnsureCreatedAsync();
+    await db.Database.MigrateAsync();
+}
+catch (MySqlException mySqlException)
+{
+    Console.Write(mySqlException.StackTrace, mySqlException.Message);    
+}
+
 if (forcePublishNow)
 {
     PublishNowLatestPostFromWp();

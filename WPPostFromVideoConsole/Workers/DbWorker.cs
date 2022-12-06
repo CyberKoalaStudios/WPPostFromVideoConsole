@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 using WPPostFromVideoConsole.Context;
 using WPPostFromVideoConsole.Interfaces;
 using WPPostFromVideoConsole.Models;
@@ -7,7 +8,7 @@ namespace WPPostFromVideoConsole.Workers;
 public class DbWorker : IDb
 {
     public static readonly DbWorker Instance = new();
-
+    
     public Video? GetVideoFromDb(VideoContext context)
     {
         var videoFromDb = context.Videos

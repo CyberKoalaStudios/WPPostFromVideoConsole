@@ -90,7 +90,7 @@ public class WordPressWorker : IWordPress
     public async Task<string> GetMediaUrlById(int? mediaId)
     {
         var media = await _wordPressClient.Media.GetByIDAsync(mediaId);
-        return media.Link;
+        return media.SourceUrl;
     }
     
 }

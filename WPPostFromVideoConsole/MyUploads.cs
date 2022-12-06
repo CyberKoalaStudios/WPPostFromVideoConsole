@@ -60,7 +60,6 @@ public class MyUploads
         UserCredential credential;
 
         await using var db = new VideoContext();
-        await db.Database.MigrateAsync();
 
         await using (var stream = new FileStream(clientSecretsFile, FileMode.Open, FileAccess.Read))
         {
@@ -141,16 +140,30 @@ public class MyUploads
         if (videoFromDb?.Id == playlistItem.Snippet.ResourceId.VideoId)
             return;
 
+        // TODO: Switch res if null, pick highest availible
+
+        
+        var thumb = playlistItem.Snippet.Thumbnails.Maxres.Url;
+
+        if (thumb == null)
+        {
+            // foreach (var resolution in playlistItem.Snippet.Thumbnails)
+            // {
+            //     
+            // }
+            thumb = playlistItem.Snippet.Thumbnails.High.Url;
+        }
+        
         var video = new Video
         {
             Id = playlistItem.Snippet.ResourceId.VideoId,
             Description = playlistItem.Snippet.Description,
             PublishedAt = playlistItem.Snippet.PublishedAt,
             Title = playlistItem.Snippet.Title,
-            Thumbnail = playlistItem.Snippet.Thumbnails.Maxres.Url,
+            Thumbnail = thumb,
             IsPublished = false
         };
-        
+
         var createdMedia =
             await WordPressWorker.Instance.UploadThumbToWp(video.Thumbnail, video.Id);
         

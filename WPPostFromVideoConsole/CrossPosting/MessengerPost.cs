@@ -63,19 +63,21 @@ internal class Telegram : MessengerPost
             case TelegramPostMode.InstantView:
                 caption = _post.Title.Rendered;
 
+                //TODO: DEBUG
                 var removedLastSlash = _post.Link.Remove(_post.Link.LastIndexOf('/'));
 
                 await _botClient.SendTextMessageAsync(
                     new ChatId(_chatId),
                     caption + "\n" +
-                    $"https://t.me/iv?url={removedLastSlash}&rhash={_rhash}"
+                    $"https://t.me/iv?url={_post.Link}&rhash={_rhash}"
                 );
                 break;
             case TelegramPostMode.InlineButton:
 
+                var photoSrc = WordPressWorker.Instance.GetMediaUrlById(_post?.FeaturedMedia ?? 6762).Result;
                 Message message = await _botClient.SendPhotoAsync(
                     chatId: new ChatId(_chatId),
-                    photo: WordPressWorker.Instance.GetMediaUrlById(_post?.FeaturedMedia ?? 6762).Result,
+                    photo: photoSrc,
                     caption: caption,
                     replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithUrl(
                         "Посмотреть",

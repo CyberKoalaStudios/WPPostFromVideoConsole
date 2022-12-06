@@ -23,6 +23,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="MySql.EntityFrameworkCore" Version="6.0.7" />
         <PackageReference Include="Telegram.Bot" Version="18.0.0" />
         <PackageReference Include="WordPressPCL" Version="2.0.0" />
     </ItemGroup>
